@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Next Token</title>
+<meta name="description" content="An interactive book on the evolution of large language models, from Shannon's n-grams to reasoning models, with 13 in-browser simulations and a peer-reviewed bibliography.">
+<meta name="author" content="Md Taufiqul Islam">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="book">
+<meta property="og:title" content="The Next Token">
+<meta property="og:description" content="How machines learned to predict language: an interactive book with simulations, grounded in peer-reviewed research. Arthashastra 2.0.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2306181A'/%3E%3Crect x='14' y='18' width='36' height='28' rx='5' fill='none' stroke='%23D9AF57' stroke-width='5'/%3E%3C/svg%3E">
+<style>
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a book. Sticky reading bar, chapter rail on wide screens, one 66ch text column, wide "laboratory" panels that break out for each simulation. */
+:root{
+  --bg:#EDF3F2; --surface:#F8FBFA; --ink:#0D2627; --muted:#4D6563; --line:#C6D6D4;
+  --teal:#0D6A65; --teal-soft:#D2E6E3; --gold:#94660F; --gold-soft:#EEDFBE; --bad:#A33B2B;
+  --display:"Rajdhani","Arial Narrow",system-ui,sans-serif;
+  --body:"Spectral",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#06181A; --surface:#0B2326; --ink:#DCE9E6; --muted:#8EA8A5; --line:#1F3C3F;
+  --teal:#4FC3B7; --teal-soft:#10383A; --gold:#D9AF57; --gold-soft:#3B3018; --bad:#E58069; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#06181A; --surface:#0B2326; --ink:#DCE9E6; --muted:#8EA8A5; --line:#1F3C3F;
+  --teal:#4FC3B7; --teal-soft:#10383A; --gold:#D9AF57; --gold-soft:#3B3018; --bad:#E58069; color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{background:var(--bg);color:var(--ink);font:400 18px/1.62 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+a{color:var(--teal)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;letter-spacing:.01em;line-height:1.1}
+
+/* reading bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--bg);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:12px;padding-block:10px;margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px))) calc(-1*max(16px,env(safe-area-inset-right,0px)));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar .brand{font:700 15px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
+.bar .now{font:500 13px var(--mono);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.bar .prog{position:absolute;left:0;bottom:-1px;height:2px;background:var(--gold);width:0}
+.bar select{font:500 13px var(--mono);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:5px 6px;max-width:42vw}
+
+/* hero */
+.hero{max-width:1180px;margin:0 auto;padding-block:56px 28px}
+.eyebrow{font:600 13px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--teal)}
+.hero h1{font-size:clamp(52px,10vw,112px);font-weight:700;margin:10px 0 0;letter-spacing:-.01em}
+.hero h1 .tok{display:inline-block;border:2px solid var(--gold);color:var(--gold);padding:0 .18em;border-radius:6px;line-height:.95}
+.hero .sub{font-size:clamp(19px,2.4vw,23px);max-width:46ch;color:var(--muted);margin:18px 0 0;font-style:italic}
+.byline{font:500 13px var(--mono);color:var(--muted);margin-top:20px;line-height:1.7}
+.byline b{color:var(--ink);font-weight:500}
+
+.timeline{max-width:1180px;margin:8px auto 0;overflow-x:auto;padding-bottom:6px}
+.timeline ol{list-style:none;display:flex;gap:0;margin:0;padding:22px 0 0;min-width:max-content;position:relative}
+.timeline ol::before{content:"";position:absolute;left:0;right:0;top:30px;height:2px;background:var(--line)}
+.timeline li{position:relative;width:118px;padding-right:10px}
+.timeline a{display:block;text-decoration:none;color:var(--ink);padding-top:22px;position:relative}
+.timeline a::before{content:"";position:absolute;top:2px;left:0;width:14px;height:14px;border-radius:50%;background:var(--bg);border:2px solid var(--teal)}
+.timeline a:hover::before{background:var(--gold);border-color:var(--gold)}
+.timeline .y{font:600 13px var(--mono);color:var(--gold)}
+.timeline .e{display:block;font:500 15px/1.2 var(--display)}
+
+/* book */
+.book{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:40px}
+@media (min-width:980px){.book{grid-template-columns:230px minmax(0,1fr)}}
+.rail{display:none}
+@media (min-width:980px){.rail{display:block;position:sticky;top:76px;align-self:start;max-height:calc(100vh - 96px);overflow:auto}}
+.rail h4{font:600 12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 6px}
+.rail a{display:flex;gap:8px;text-decoration:none;color:var(--muted);font:500 15px/1.25 var(--display);padding:4px 0}
+.rail a span{font:500 12px var(--mono);color:var(--gold);min-width:22px;padding-top:2px}
+.rail a.on{color:var(--ink)}
+.rail a.on span{color:var(--teal)}
+article{min-width:0}
+.prose{max-width:66ch}
+.prose p{margin:0 0 1em}
+.part{font:600 13px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--gold);border-top:2px solid var(--gold);padding-top:10px;margin:64px 0 0}
+.chapter{padding-top:40px}
+.chapter h2{font-size:clamp(32px,5vw,46px);font-weight:700;margin:0 0 4px}
+.chapter .kicker{font:500 14px var(--mono);color:var(--teal);margin-bottom:22px}
+.chapter h3{font-size:22px;font-weight:600;margin:1.6em 0 .4em}
+.eq{font:500 16px var(--mono);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;overflow-x:auto;margin:0 0 1em;white-space:nowrap}
+cite.c,a.cite{font-style:normal}
+a.cite{text-decoration:none;border-bottom:1px dotted var(--teal);font-size:.92em}
+.srcs{max-width:66ch;font:400 14px/1.5 var(--mono);color:var(--muted);border-left:2px solid var(--line);padding-left:14px;margin-top:24px}
+.srcs b{color:var(--ink);font-weight:500}
+.note{max-width:66ch;font-size:16px;background:var(--gold-soft);border-radius:6px;padding:12px 16px;margin:0 0 1em}
+
+/* laboratory panels */
+.lab{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin:28px 0;overflow:hidden}
+.lab header{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--teal-soft)}
+.lab header .n{font:600 12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+.lab header h3{margin:0;font-size:20px}
+.lab .body{padding:16px 18px;display:grid;gap:16px}
+.lab .how{font-size:15.5px;color:var(--muted);margin:0;max-width:72ch}
+.controls{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:end}
+.ctl{display:grid;gap:4px;min-width:150px;flex:1 1 170px}
+.ctl label{font:500 12.5px var(--mono);color:var(--muted)}
+.ctl output{color:var(--ink);font-weight:500}
+input[type=range]{width:100%;accent-color:var(--teal)}
+select,input[type=text]{font:500 15px var(--mono);background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:7px 9px;width:100%}
+button{font:600 14px var(--mono);background:var(--teal);color:var(--bg);border:0;border-radius:5px;padding:9px 14px;cursor:pointer}
+button.ghost{background:transparent;color:var(--teal);border:1px solid var(--teal)}
+button:hover{filter:brightness(1.08)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;flex-wrap:wrap}
+.seg button{background:transparent;color:var(--muted);border-radius:0;padding:8px 12px;font-weight:500}
+.seg button[aria-pressed=true]{background:var(--teal);color:var(--bg)}
+.out{font:400 15px/1.6 var(--mono);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:12px 14px;white-space:pre-wrap;word-break:break-word;min-height:4em}
+.stats{display:flex;flex-wrap:wrap;gap:10px 26px;font:400 13px var(--mono);color:var(--muted)}
+.stats b{display:block;font:600 22px var(--display);color:var(--ink);letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.wide{overflow-x:auto}
+svg.chart{width:100%;height:auto;display:block}
+svg .grid{stroke:var(--line);stroke-width:1}
+svg .axis{stroke:var(--muted);stroke-width:1}
+svg .tick{fill:var(--muted);font:12px var(--mono)}
+svg .alabel{fill:var(--muted);font:500 12.5px var(--mono)}
+svg .ln{fill:none;stroke:var(--teal);stroke-width:2.6;stroke-linejoin:round}
+svg .ln.gold{stroke:var(--gold)}
+svg .ln.dash{stroke-dasharray:6 5;stroke-width:2}
+svg .ln.muted{stroke:var(--muted)}
+svg .mk{fill:var(--gold);stroke:var(--surface);stroke-width:2}
+svg .mk.teal{fill:var(--teal)}
+svg .mk.hollow{fill:var(--surface);stroke:var(--muted);stroke-width:2}
+svg .mlabel{fill:var(--ink);font:500 12px var(--mono)}
+svg .vl{stroke:var(--gold);stroke-dasharray:3 4;stroke-width:1.5}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font:400 13px var(--mono);color:var(--muted)}
+.legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:6px;background:var(--teal)}
+.legend i.g{background:var(--gold)}
+.legend i.m{background:var(--muted)}
+
+/* bars */
+.bars{display:grid;gap:6px}
+.brow{display:grid;grid-template-columns:minmax(80px,30%) 1fr 64px;gap:10px;align-items:center;font:400 14px var(--mono)}
+.brow .lb{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .tr{height:16px;background:var(--bg);border:1px solid var(--line);border-radius:3px;position:relative;overflow:hidden}
+.brow .fl{position:absolute;inset:0 auto 0 0;background:var(--teal);transition:width .25s}
+.brow .fl.g{background:var(--gold);opacity:.85;height:50%;top:auto}
+.brow .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.brow.off .lb{text-decoration:line-through;color:var(--muted)}
+.brow.off .fl{background:var(--line)}
+
+/* tokens */
+.toks{display:flex;flex-wrap:wrap;gap:6px}
+.tk{font:500 15px var(--mono);padding:5px 9px;border-radius:5px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;position:relative}
+.tk.sel{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
+.chip{display:inline-block;font:500 14px var(--mono);padding:2px 6px;margin:1px;border-radius:4px;background:var(--teal-soft);border:1px solid var(--line)}
+.chip.new{background:var(--gold-soft);border-color:var(--gold)}
+table.hm{border-collapse:collapse;font:400 12px var(--mono)}
+table.hm td,table.hm th{width:34px;height:30px;text-align:center;padding:0}
+table.hm th{color:var(--muted);font-weight:500;padding:0 6px}
+table.hm th.r{text-align:right;white-space:nowrap}
+table.hm th.c{writing-mode:vertical-rl;transform:rotate(180deg);height:78px;vertical-align:bottom;padding:4px 0}
+table.hm tr.sel th.r{color:var(--gold)}
+.mask td{border:1px solid var(--line)}
+.doc{border:1px solid var(--line);border-radius:6px;padding:10px 12px;background:var(--bg);font-size:15.5px}
+.doc .meta{font:500 12px var(--mono);color:var(--muted);display:flex;justify-content:space-between;gap:10px;margin-bottom:4px}
+.doc mark{background:var(--gold-soft);color:var(--ink);padding:0 2px;border-radius:2px}
+.doc.top{border-color:var(--teal)}
+.two{display:grid;gap:16px;grid-template-columns:1fr}
+@media (min-width:760px){.two{grid-template-columns:1fr 1fr}}
+.two>*{min-width:0}
+
+/* bibliography */
+.bib{list-style:none;padding:0;margin:0;display:grid;gap:12px;max-width:80ch}
+.bib li{font-size:16px;padding-left:14px;border-left:2px solid var(--line)}
+.bib li:target{border-left-color:var(--gold);background:var(--gold-soft)}
+.badge{display:inline-block;font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:3px;margin-left:6px;vertical-align:2px}
+.badge.pr{background:var(--teal-soft);color:var(--teal)}
+.badge.pre,.badge.tr{background:var(--gold-soft);color:var(--gold)}
+footer{max-width:1180px;margin:72px auto 0;border-top:1px solid var(--line);padding-top:18px;font:400 13px/1.7 var(--mono);color:var(--muted)}
+</style>
+
+</head>
+<body>
+<div class="bar" id="bar">
+  <span class="brand">The Next Token</span>
+  <span class="now" id="now">Prologue</span>
+  <label for="jump" class="now" style="flex:0;position:absolute;left:-9999px">Jump to chapter</label>
+  <select id="jump" aria-label="Jump to chapter"></select>
+  <div class="prog" id="prog"></div>
+</div>
+
+<header class="hero">
+  <div class="eyebrow">Arthashastra 2.0 · An interactive book in thirteen laboratories</div>
+  <h1>The Next <span class="tok">Token</span></h1>
+  <p class="sub">How machines learned to predict language, from Shannon's letter counts to reasoning models, told through the papers that changed the field and simulations you can run.</p>
+  <div class="byline"><b>Md Taufiqul Islam</b>, Joint Secretary to the Government of Bangladesh · taufiq28@gmail.com<br>Drafted with Claude · October 2026 · Every claim is tied to a peer-reviewed source unless marked otherwise</div>
+</header>
+
+<nav class="timeline" aria-label="Milestones"><ol id="tl"></ol></nav>
+
+<div class="book">
+<nav class="rail" id="rail" aria-label="Chapters"></nav>
+<article id="art">
+
+<section class="chapter" id="prologue" data-title="Prologue">
+  <h2>How to read this book</h2>
+  <div class="kicker">Prologue</div>
+  <div class="prose">
+    <p>Every large language model does one thing at its core. It reads a sequence of tokens and assigns a probability to every possible next token. Everything else in this book, from attention to alignment, is a better way to do that one thing, or a way to make that one thing useful.</p>
+    <p>The chapters follow the historical record. Each one introduces the papers that moved the field, explains the idea in plain terms, and gives you a laboratory: a small simulation that runs entirely in your browser. The simulations are toy models. They use real formulas from the cited papers, but at a scale you can see and change. Where a lab uses a published equation with fitted constants, the constants are the published ones.</p>
+    <p>Sources were chosen from peer-reviewed venues: journals such as <i>Nature</i>, <i>Science</i>, <i>JMLR</i> and <i>Neural Computation</i>, and the main refereed conferences (NeurIPS, ICLR, ACL, NAACL, FAccT). A few influential documents never went through peer review, such as the GPT-1 and GPT-2 technical reports and the Kaplan scaling-law preprint. They are cited because the story cannot be told without them, and they are marked <span class="badge pre">Preprint</span> or <span class="badge tr">Tech report</span> in the bibliography.</p>
+  </div>
+</section>
+
+<div class="part">Part I · Foundations</div>
+
+<section class="chapter" id="ch1" data-title="1 · Counting the next letter">
+  <h2>Counting the next letter</h2>
+  <div class="kicker">Chapter 1 · 1948</div>
+  <div class="prose">
+    <p>The idea of a language model is older than the computer that runs it. In 1948 Claude Shannon modelled English as a stochastic process, a source that emits symbols one at a time with probabilities that depend on what came before <cite class="c" data-r="shannon1948"></cite>. He built a series of approximations by hand. Letters drawn at random produced gibberish. Letters drawn with their true frequencies looked a little better. Letters drawn according to the previous one or two letters began to produce fragments that resembled English words. Words drawn according to the previous word produced phrases that were locally plausible and globally meaningless.</p>
+    <p>Shannon's interest was communication. A source that is predictable carries less information per symbol and can be compressed further. Prediction, compression and information are the same quantity seen from three sides. That equivalence still defines how language models are trained: the training loss of a modern model is its average surprise, in bits or nats, at the next token.</p>
+    <p>For fifty years the working version of this idea was the <i>n</i>-gram model: count how often each sequence of <i>n</i> symbols appears, and predict from the counts. It powered speech recognition and statistical machine translation. Its weakness is data sparsity. The number of possible contexts grows exponentially with <i>n</i>, so most long contexts are never seen in training, and the model has nothing to say about them.</p>
+  </div>
+  <div class="lab" id="lab1">
+    <header><span class="n">Laboratory 1</span><h3>Shannon's approximations</h3></header>
+    <div class="body">
+      <p class="how">A character model is trained on a short paragraph about rivers and language. Set how many previous characters it may look at, then generate. At order 0 it samples letters by frequency alone. Around order 4 or 5 it starts copying whole phrases from its tiny corpus, which is the sparsity problem in miniature.</p>
+      <div class="controls">
+        <div class="ctl"><label for="ng-k">Context length: <output id="ng-ko">3</output> characters</label><input type="range" id="ng-k" min="0" max="7" value="3"></div>
+        <button id="ng-go">Generate 300 characters</button>
+      </div>
+      <div class="out" id="ng-out" aria-live="polite"></div>
+      <div class="stats" id="ng-stats"></div>
+    </div>
+  </div>
+  <div class="srcs" data-s="shannon1948"></div>
+</section>
+
+<section class="chapter" id="ch2" data-title="2 · Words become vectors">
+  <h2>Words become vectors</h2>
+  <div class="kicker">Chapter 2 · 2003–2017</div>
+  <div class="prose">
+    <p>Bengio and colleagues attacked sparsity directly <cite class="c" data-r="bengio2003"></cite>. Their neural probabilistic language model learned two things at once: a vector of real numbers for every word, and a neural network that predicts the next word from the vectors of the previous few. Because similar words end up with similar vectors, a sentence the model has never seen can still receive a sensible probability if it resembles sentences it has seen. "The cat is walking in the bedroom" lends statistical strength to "a dog was running in a room."</p>
+    <p>A decade later Mikolov and colleagues made word vectors cheap to train on billions of words with the skip-gram model and negative sampling <cite class="c" data-r="mikolov2013"></cite>. The vectors showed surprising linear structure: the offset from <i>man</i> to <i>woman</i> is close to the offset from <i>king</i> to <i>queen</i>, and the offset from a country to its capital is roughly constant.</p>
+    <p>That geometry has a darker side. Vectors learned from human text absorb the associations in that text, including stereotypes about gender and race. Bolukbasi and colleagues found occupational gender analogies in widely used embeddings <cite class="c" data-r="bolukbasi2016"></cite>, and Caliskan and colleagues showed in <i>Science</i> that embeddings reproduce the implicit biases measured in human psychology experiments <cite class="c" data-r="caliskan2017"></cite>. Every model in the rest of this book inherits this property.</p>
+  </div>
+  <div class="lab" id="lab2">
+    <header><span class="n">Laboratory 2</span><h3>Vector arithmetic on meaning</h3></header>
+    <div class="body">
+      <p class="how">Pick an analogy of the form A − B + C. The lab computes the resulting point and finds the nearest word that is not A, B or C. Real embeddings have hundreds of dimensions; these hand-placed two-dimensional points only illustrate the geometry.</p>
+      <div class="controls">
+        <div class="ctl"><label for="an-a">A</label><select id="an-a"></select></div>
+        <div class="ctl"><label for="an-b">minus B</label><select id="an-b"></select></div>
+        <div class="ctl"><label for="an-c">plus C</label><select id="an-c"></select></div>
+      </div>
+      <div class="seg" id="an-pre" role="group" aria-label="Presets"></div>
+      <div class="wide"><div id="an-svg"></div></div>
+      <div class="stats" id="an-res"></div>
+    </div>
+  </div>
+  <div class="srcs" data-s="bengio2003 mikolov2013 bolukbasi2016 caliskan2017"></div>
+</section>
+
+<section class="chapter" id="ch3" data-title="3 · Memory and its leaks">
+  <h2>Memory and its leaks</h2>
+  <div class="kicker">Chapter 3 · 1986–2014</div>
+  <div class="prose">
+    <p>A fixed window of previous words is a crude memory. Recurrent neural networks replaced it with a hidden state that is updated at every step and, in principle, carries information from the start of a sequence to its end. They are trained with backpropagation <cite class="c" data-r="rumelhart1986"></cite> unrolled through time, and Elman showed that even simple recurrent networks discover grammatical structure such as word categories from sequences alone <cite class="c" data-r="elman1990"></cite>.</p>
+    <p>In practice the memory leaked. Bengio, Simard and Frasconi proved that learning long-range dependencies with gradient descent is hard: the error signal is multiplied by a similar factor at every step, so over long spans it either vanishes or explodes <cite class="c" data-r="bengio1994"></cite>. Hochreiter and Schmidhuber's Long Short-Term Memory answered with a memory cell whose content is copied forward by default and changed only through learned gates <cite class="c" data-r="hochreiter1997"></cite>. A later addition, the forget gate, let the cell decide when to clear itself <cite class="c" data-r="gers2000"></cite>.</p>
+    <p>LSTMs carried the field into the 2010s. Sutskever, Vinyals and Le used one LSTM to read a sentence into a single vector and another to write its translation <cite class="c" data-r="sutskever2014"></cite>. That single vector was the next bottleneck: a whole sentence, of any length, squeezed through a fixed-size pipe.</p>
+  </div>
+  <div class="lab" id="lab3">
+    <header><span class="n">Laboratory 3</span><h3>The vanishing gradient</h3></header>
+    <div class="body">
+      <p class="how">The error signal that reaches a token <i>t</i> steps back is the product of <i>t</i> per-step factors. For a simple recurrent network that factor is set by the recurrent weights and the slope of the activation function. Through an LSTM cell it is the forget gate's value. The chart uses a logarithmic scale: each gridline is a factor of a thousand.</p>
+      <div class="controls">
+        <div class="ctl"><label for="vg-r">RNN per-step factor: <output id="vg-ro">0.80</output></label><input type="range" id="vg-r" min="0.5" max="1.3" step="0.01" value="0.8"></div>
+        <div class="ctl"><label for="vg-f">LSTM forget gate: <output id="vg-fo">0.98</output></label><input type="range" id="vg-f" min="0.8" max="1" step="0.005" value="0.98"></div>
+      </div>
+      <div id="vg-svg"></div>
+      <div class="legend"><span><i></i>Simple RNN</span><span><i class="g"></i>LSTM cell path</span></div>
+      <div class="stats" id="vg-stats"></div>
+    </div>
+  </div>
+  <div class="srcs" data-s="rumelhart1986 elman1990 bengio1994 hochreiter1997 gers2000 sutskever2014"></div>
+</section>
+
+<div class="part">Part II · The Transformer</div>
+
+<section class="chapter" id="ch4" data-title="4 · Attention">
+  <h2>Attention</h2>
+  <div class="kicker">Chapter 4 · 2015–2017</div>
+  <div class="prose">
+    <p>Bahdanau, Cho and Bengio removed the bottleneck by letting the decoder look back <cite class="c" data-r="bahdanau2015"></cite>. At each output word the model computes a score for every input word, turns the scores into weights with a softmax, and reads a weighted average of the input. The weights form a soft alignment between the two sentences, learned without anyone labelling which word translates which.</p>
+    <p>Vaswani and colleagues then asked what happens if attention is the only mechanism <cite class="c" data-r="vaswani2017"></cite>. The Transformer drops recurrence. Every token produces a query, a key and a value. Each token's new representation is a weighted average of all values, weighted by how well its query matches each key:</p>
+    <div class="eq">Attention(Q, K, V) = softmax( Q Kᵀ / √d<sub>k</sub> ) V</div>
+    <p>Several such attention "heads" run in parallel, each free to learn a different relation. Because no step waits for the previous one, the whole sequence is processed at once on parallel hardware. The original model set a new state of the art on English–German and English–French translation at a fraction of the training cost of earlier systems. Within two years it had displaced recurrent networks almost everywhere in language processing.</p>
+  </div>
+  <div class="lab" id="lab4">
+    <header><span class="n">Laboratory 4</span><h3>Who does "it" refer to?</h3></header>
+    <div class="body">
+      <p class="how">Each word has small hand-made query and key vectors. Click a word to see where it attends. Then change the last word from <i>tired</i> to <i>wide</i>: the query for <i>it</i> changes, and its attention moves from <i>animal</i> to <i>street</i>. The temperature divides the scores before the softmax; at low temperature attention becomes nearly one-hot.</p>
+      <div class="controls">
+        <div class="seg" id="at-end" role="group" aria-label="Last word"><button aria-pressed="true" data-v="tired">…was tired</button><button aria-pressed="false" data-v="wide">…was wide</button></div>
+        <div class="ctl"><label for="at-t">Temperature: <output id="at-to">1.0</output></label><input type="range" id="at-t" min="0.2" max="3" step="0.1" value="1"></div>
+      </div>
+      <div class="toks" id="at-toks"></div>
+      <div class="two">
+        <div class="bars" id="at-bars"></div>
+        <div class="wide"><table class="hm" id="at-hm"></table></div>
+      </div>
+    </div>
+  </div>
+  <div class="srcs" data-s="bahdanau2015 vaswani2017"></div>
+</section>
+
+<section class="chapter" id="ch5" data-title="5 · Cutting text into tokens">
+  <h2>Cutting text into tokens</h2>
+  <div class="kicker">Chapter 5 · 2016–2023</div>
+  <div class="prose">
+    <p>A model with a fixed vocabulary of whole words cannot read a word it has never seen: a new name, a misspelling, a compound, a word from another language. Sennrich, Haddow and Birch borrowed byte pair encoding, a compression trick, to fix this for machine translation <cite class="c" data-r="sennrich2016"></cite>. Start from single characters. Repeatedly find the most frequent adjacent pair in the training data and merge it into a new symbol. After a few tens of thousands of merges, common words are single tokens and rare words split into familiar pieces.</p>
+    <p>Almost every modern model uses a descendant of this scheme, so the "next token" is usually a word piece, not a word. This has consequences that are easy to miss. A tokenizer trained mostly on English text compresses English well and other scripts poorly. Petrov and colleagues measured the same content in many languages and found that some need several times more tokens than English <cite class="c" data-r="petrov2023"></cite>. Since usage is priced and limited by tokens, speakers of those languages pay more and fit less into a model's context window. Bengali is among the languages that are expensive under English-centred tokenizers.</p>
+  </div>
+  <div class="lab" id="lab5">
+    <header><span class="n">Laboratory 5</span><h3>Byte pair encoding, one merge at a time</h3></header>
+    <div class="body">
+      <p class="how">This is the worked example from Sennrich et al.: the words <i>low</i> ×5, <i>lower</i> ×2, <i>newest</i> ×6 and <i>widest</i> ×3, with · marking the end of a word. Each step merges the most frequent adjacent pair. Then type a word the model never saw to see how the learned merges split it.</p>
+      <div class="controls">
+        <button id="bpe-step">Merge next pair</button>
+        <button class="ghost" id="bpe-reset">Reset</button>
+        <div class="ctl"><label for="bpe-in">Encode a new word</label><input type="text" id="bpe-in" value="lowest" autocomplete="off"></div>
+      </div>
+      <div class="two">
+        <div><div class="stats" style="margin-bottom:8px"><span>Training words</span></div><div id="bpe-words"></div></div>
+        <div><div class="stats" style="margin-bottom:8px"><span>Merges learned, in order</span></div><div id="bpe-merges" class="out" style="min-height:3em"></div></div>
+      </div>
+      <div class="stats" id="bpe-enc"></div>
+    </div>
+  </div>
+  <div class="srcs" data-s="sennrich2016 petrov2023"></div>
+</section>
+
+<section class="chapter" id="ch6" data-title="6 · Three recipes for pretraining">
+  <h2>Three recipes for pretraining</h2>
+  <div class="kicker">Chapter 6 · 2018–2020</div>
+  <div class="prose">
+    <p>Between 2018 and 2020 three ways of training Transformers on raw text competed. The difference between them is mostly which tokens may attend to which.</p>
+    <p><b>Decoder only.</b> OpenAI's GPT trained a Transformer to predict the next token, with each position allowed to see only the positions before it <cite class="c" data-r="radford2018"></cite>. <b>Encoder only.</b> Google's BERT hid 15 percent of input tokens and trained the model to recover them using context on both sides <cite class="c" data-r="devlin2019"></cite>. Bidirectional context made BERT the strongest model for understanding tasks such as classification and question answering, and it topped the benchmarks of its day. <b>Encoder–decoder.</b> T5 cast every task, from translation to classification, as text in and text out, and ran a systematic comparison of objectives and architectures <cite class="c" data-r="raffel2020"></cite>.</p>
+    <p>The decoder-only design won the generative era. Brown and colleagues scaled it to 175 billion parameters in GPT-3 and showed that a model trained only to continue text could perform new tasks from a few examples written into the prompt, with no further training <cite class="c" data-r="brown2020"></cite>. They called this in-context learning. A single model that adapts through its prompt changed how language models are built and used.</p>
+  </div>
+  <div class="lab" id="lab6">
+    <header><span class="n">Laboratory 6</span><h3>Attention masks</h3></header>
+    <div class="body">
+      <p class="how">Rows are the token doing the attending, columns are the tokens it may read. A filled cell means attention is allowed. Click a row label to highlight what that token can see.</p>
+      <div class="seg" id="mk-mode" role="group" aria-label="Architecture"><button aria-pressed="false" data-v="enc">Encoder (BERT)</button><button aria-pressed="true" data-v="dec">Decoder (GPT)</button><button aria-pressed="false" data-v="ed">Encoder–decoder (T5)</button></div>
+      <div class="two">
+        <div class="wide"><table class="hm mask" id="mk-hm"></table></div>
+        <p class="how" id="mk-note" style="align-self:center"></p>
+      </div>
+    </div>
+  </div>
+  <div class="srcs" data-s="radford2018 devlin2019 raffel2020 brown2020"></div>
+</section>
+
+<div class="part">Part III · Scale</div>
+
+<section class="chapter" id="ch7" data-title="7 · The arithmetic of scale">
+  <h2>The arithmetic of scale</h2>
+  <div class="kicker">Chapter 7 · 2020–2022</div>
+  <div class="prose">
+    <p>Kaplan and colleagues at OpenAI reported that a language model's loss falls as a smooth power law in three quantities: the number of parameters <i>N</i>, the number of training tokens <i>D</i>, and the compute used <i>C</i>, across seven orders of magnitude <cite class="c" data-r="kaplan2020"></cite>. Their analysis suggested that, given more compute, most of it should go into a larger model. The paper was never peer reviewed, but it shaped how the largest models of 2020 and 2021 were trained.</p>
+    <p>Hoffmann and colleagues at DeepMind revisited the question with more than 400 trained models and reached a different answer <cite class="c" data-r="hoffmann2022"></cite>. Parameters and tokens should grow in equal proportion, roughly 20 training tokens per parameter. By that rule, the large models of the time were undertrained. Their 70-billion-parameter Chinchilla, trained on 1.4 trillion tokens with the same compute as the 280-billion-parameter Gopher, outperformed it. One of their fitted forms is:</p>
+    <div class="eq">L(N, D) = 1.69 + 406.4 / N<sup>0.34</sup> + 410.7 / D<sup>0.28</sup> &nbsp;&nbsp; with &nbsp; C ≈ 6ND</div>
+    <p>The constant 1.69 is the irreducible loss, the entropy of natural text that no model can remove. The other two terms are what a finite model and finite data leave on the table. In practice, developers now often train smaller models on far more than 20 tokens per parameter, because a smaller model is cheaper to run for millions of users. Chinchilla answers a narrower question: how to get the lowest loss for a fixed training budget.</p>
+  </div>
+  <div class="lab" id="lab7">
+    <header><span class="n">Laboratory 7</span><h3>Spending a compute budget</h3></header>
+    <div class="body">
+      <p class="how">Choose a training budget in floating-point operations. For each model size, the remaining budget buys <i>D = C / 6N</i> tokens, and the Chinchilla formula predicts the loss. The curve's lowest point is the compute-optimal model. The table compares three real models using the same formula.</p>
+      <div class="controls">
+        <div class="ctl"><label for="sc-c">Compute budget: <output id="sc-co"></output></label><input type="range" id="sc-c" min="18" max="26" step="0.1" value="23.5"></div>
+      </div>
+      <div id="sc-svg"></div>
+      <div class="stats" id="sc-stats"></div>
+      <div class="wide"><table class="hm" id="sc-tab" style="font-size:13px"></table></div>
+    </div>
+  </div>
+  <div class="srcs" data-s="kaplan2020 hoffmann2022"></div>
+</section>
+
+<section class="chapter" id="ch8" data-title="8 · Choosing the next word">
+  <h2>Choosing the next word</h2>
+  <div class="kicker">Chapter 8 · 2018–2020</div>
+  <div class="prose">
+    <p>A trained model gives a probability distribution. Turning that distribution into text is a separate decision, and it matters more than it seems. Always taking the most probable token, or searching for the most probable whole sequence with beam search, sounds ideal. Holtzman and colleagues showed that it produces bland, repetitive text that loops on itself, a problem they called neural text degeneration <cite class="c" data-r="holtzman2020"></cite>. Human writing is not the most probable text; it regularly contains words a model rates as unlikely.</p>
+    <p>Pure random sampling fails the other way. The long tail of unlikely tokens is collectively large, and sampling from it now and then derails the text. Three controls are used together. <b>Temperature</b> rescales the logits before the softmax: below 1 sharpens the distribution, above 1 flattens it. <b>Top-k</b> keeps only the <i>k</i> most likely tokens <cite class="c" data-r="fan2018"></cite>. <b>Top-p</b>, or nucleus sampling, keeps the smallest set of tokens whose probabilities add up to <i>p</i>, so the cut adapts to how confident the model is <cite class="c" data-r="holtzman2020"></cite>.</p>
+  </div>
+  <div class="lab" id="lab8">
+    <header><span class="n">Laboratory 8</span><h3>Temperature, top-k and nucleus sampling</h3></header>
+    <div class="body">
+      <p class="how">Context: <i>"After the monsoon, the river carried the boat toward the …"</i> The bars show the distribution after your settings; struck-out tokens can no longer be sampled. Draw samples to see what the settings produce.</p>
+      <div class="controls">
+        <div class="ctl"><label for="dc-t">Temperature: <output id="dc-to">1.0</output></label><input type="range" id="dc-t" min="0.1" max="2.5" step="0.05" value="1"></div>
+        <div class="ctl"><label for="dc-k">Top-k: <output id="dc-ko">10</output></label><input type="range" id="dc-k" min="1" max="10" step="1" value="10"></div>
+        <div class="ctl"><label for="dc-p">Top-p: <output id="dc-po">1.00</output></label><input type="range" id="dc-p" min="0.1" max="1" step="0.01" value="1"></div>
+      </div>
+      <div class="bars" id="dc-bars"></div>
+      <div class="controls"><button id="dc-go">Draw 40 samples</button><span class="stats" id="dc-ent"></span></div>
+      <div class="out" id="dc-out" style="min-height:2.4em"></div>
+    </div>
+  </div>
+  <div class="srcs" data-s="holtzman2020 fan2018"></div>
+</section>
+
+<section class="chapter" id="ch9" data-title="9 · Does ability emerge?">
+  <h2>Does ability emerge?</h2>
+  <div class="kicker">Chapter 9 · 2022–2023</div>
+  <div class="prose">
+    <p>Wei and colleagues catalogued tasks on which small models perform at chance and larger models suddenly do well, such as multi-digit arithmetic and some reasoning benchmarks <cite class="c" data-r="wei2022emergent"></cite>. They called these abilities emergent: not present in smaller models and not predictable by extrapolating from them. The finding fed a worry that capabilities, including dangerous ones, might appear without warning.</p>
+    <p>Schaeffer, Miranda and Koyejo offered a different explanation <cite class="c" data-r="schaeffer2023"></cite>. Many emergent results use all-or-nothing metrics such as exact match. If a model must get every one of <i>L</i> tokens right, and its per-token accuracy <i>p</i> improves smoothly with scale, then the task score is <i>p<sup>L</sup></i>, which sits near zero and then shoots up. Measured with a continuous metric, the same models improve gradually. The paper received an outstanding paper award at NeurIPS 2023.</p>
+    <p>The debate is not fully closed. Smooth underlying improvement does not mean a capability is unimportant when it crosses a usable threshold, and a user who needs a correct answer experiences the exact-match curve. The lesson for evaluation is practical: what looks like a sudden leap may be an artefact of how success is scored, so report more than one metric.</p>
+  </div>
+  <div class="lab" id="lab9">
+    <header><span class="n">Laboratory 9</span><h3>A mirage made by the metric</h3></header>
+    <div class="body">
+      <p class="how">Per-token accuracy rises smoothly with model size (teal). The task requires an answer of <i>L</i> tokens to be exactly right, so its score is per-token accuracy to the power <i>L</i> (gold). Increase <i>L</i> and watch a smooth trend turn into an apparent jump.</p>
+      <div class="controls">
+        <div class="ctl"><label for="em-l">Answer length L: <output id="em-lo">10</output> tokens</label><input type="range" id="em-l" min="1" max="40" step="1" value="10"></div>
+      </div>
+      <div id="em-svg"></div>
+      <div class="legend"><span><i></i>Per-token accuracy (continuous metric)</span><span><i class="g"></i>Exact match (all-or-nothing)</span></div>
+    </div>
+  </div>
+  <div class="srcs" data-s="wei2022emergent schaeffer2023"></div>
+</section>
+
+<div class="part">Part IV · Making models useful</div>
+
+<section class="chapter" id="ch10" data-title="10 · Teaching models what people want">
+  <h2>Teaching models what people want</h2>
+  <div class="kicker">Chapter 10 · 2017–2023</div>
+  <div class="prose">
+    <p>A pretrained model imitates its training text, which includes helpful answers, wrong answers and abuse. Making it follow instructions requires a signal about what people actually prefer. Christiano and colleagues showed that agents can learn complex behaviour from human comparisons of pairs of outcomes, by first fitting a reward model to the comparisons <cite class="c" data-r="christiano2017"></cite>. The reward model uses the Bradley–Terry form: the probability that response A is preferred to B is σ(r<sub>A</sub> − r<sub>B</sub>).</p>
+    <p>Ouyang and colleagues applied this to GPT-3 in three stages: supervised fine-tuning on demonstrations, a reward model trained on human rankings, and reinforcement learning against that reward with a penalty for drifting too far from the starting model <cite class="c" data-r="ouyang2022"></cite>. Human raters preferred the 1.3-billion-parameter InstructGPT to the 175-billion-parameter GPT-3. Alignment with intent, not size, decided usefulness.</p>
+    <p>Rafailov and colleagues noticed that this penalised objective has a closed-form optimum <cite class="c" data-r="rafailov2023"></cite>:</p>
+    <div class="eq">π*(y | x) ∝ π<sub>ref</sub>(y | x) · exp( r(x, y) / β )</div>
+    <p>The new policy reweights the old one by exponentiated reward, and β sets how far it may move. Their method, Direct Preference Optimization, uses this relation to train on preference pairs directly, without a separate reward model or reinforcement learning loop. Both approaches share a limit: the model learns what raters reward, which is not always what is true.</p>
+  </div>
+  <div class="lab" id="lab10">
+    <header><span class="n">Laboratory 10</span><h3>Reweighting a policy by reward</h3></header>
+    <div class="body">
+      <p class="how">Prompt: <i>"Explain to a ten-year-old why the sky is blue."</i> Six candidate answers have a reference probability from the pretrained model and a reward from a preference model. Lower β lets the policy chase reward harder and move further from the reference, measured by KL divergence.</p>
+      <div class="controls">
+        <div class="ctl"><label for="al-b">β: <output id="al-bo">1.00</output></label><input type="range" id="al-b" min="-1.5" max="1" step="0.02" value="0"></div>
+      </div>
+      <div class="bars" id="al-bars"></div>
+      <div class="legend"><span><i></i>Aligned policy π*</span><span><i class="g"></i>Reference model π<sub>ref</sub></span></div>
+      <div class="stats" id="al-stats"></div>
+    </div>
+  </div>
+  <div class="srcs" data-s="christiano2017 ouyang2022 rafailov2023"></div>
+</section>
+
+<section class="chapter" id="ch11" data-title="11 · Thinking out loud">
+  <h2>Thinking out loud</h2>
+  <div class="kicker">Chapter 11 · 2022–2025</div>
+  <div class="prose">
+    <p>A model that must produce an answer in one token has one forward pass to compute it. Wei and colleagues showed that prompting large models with examples that include intermediate reasoning steps, a chain of thought, sharply improves performance on arithmetic, commonsense and symbolic reasoning <cite class="c" data-r="wei2022cot"></cite>. The benefit appeared mainly in large models. Writing the steps gives the model more computation and a place to keep intermediate results.</p>
+    <p>Wang and colleagues added self-consistency: sample many reasoning chains and take a majority vote over their final answers <cite class="c" data-r="wang2023"></cite>. Correct chains tend to converge on the same answer, while errors scatter across many different wrong answers, so the vote filters noise.</p>
+    <p>The next step was to train the reasoning, not just prompt it. DeepSeek-AI reported in <i>Nature</i> that reinforcement learning with rewards based only on whether final answers were correct, on problems where correctness can be checked automatically, led a model to produce longer reasoning with behaviours such as self-verification and revisiting earlier steps <cite class="c" data-r="deepseek2025"></cite>. Reasoning models of this kind trade more computation at answer time for accuracy.</p>
+  </div>
+  <div class="lab" id="lab11">
+    <header><span class="n">Laboratory 11</span><h3>Self-consistency by majority vote</h3></header>
+    <div class="body">
+      <p class="how">Each sampled chain reaches the right answer with probability <i>p</i>; otherwise it lands on one of <i>m</i> wrong answers at random. The chart shows, from 4,000 simulated questions per point, how often the plurality vote is right as the number of chains grows. When <i>p</i> is low but wrong answers scatter, voting still helps. When wrong answers agree (<i>m</i> = 1) and <i>p</i> &lt; 0.5, voting makes things worse.</p>
+      <div class="controls">
+        <div class="ctl"><label for="sc2-p">Per-chain accuracy p: <output id="sc2-po">0.40</output></label><input type="range" id="sc2-p" min="0.1" max="0.9" step="0.01" value="0.4"></div>
+        <div class="ctl"><label for="sc2-m">Distinct wrong answers m: <output id="sc2-mo">5</output></label><input type="range" id="sc2-m" min="1" max="12" step="1" value="5"></div>
+      </div>
+      <div id="sc2-svg"></div>
+      <div class="stats" id="sc2-stats"></div>
+    </div>
+  </div>
+  <div class="srcs" data-s="wei2022cot wang2023 deepseek2025"></div>
+</section>
+
+<section class="chapter" id="ch12" data-title="12 · Looking things up">
+  <h2>Looking things up</h2>
+  <div class="kicker">Chapter 12 · 2020–2023</div>
+  <div class="prose">
+    <p>A model's knowledge is frozen into its weights at training time, and when it lacks a fact it often produces a fluent, confident fabrication. Ji and colleagues' survey in <i>ACM Computing Surveys</i> documents this "hallucination" across summarisation, dialogue, question answering and translation <cite class="c" data-r="ji2023"></cite>.</p>
+    <p>Lewis and colleagues proposed retrieval-augmented generation: before answering, retrieve relevant passages from a document collection and condition the answer on them <cite class="c" data-r="lewis2020"></cite>. Knowledge then lives partly outside the model, where it can be updated, inspected and cited. Two further lines of work let models act. Toolformer taught a model to decide for itself when to call tools such as a calculator or search engine <cite class="c" data-r="schick2023"></cite>, and ReAct interleaved reasoning steps with actions and observations, so the model can search, read and revise its plan <cite class="c" data-r="yao2023"></cite>. These loops are the basis of today's AI agents.</p>
+    <p>Retrieval reduces fabrication but does not remove it. A model can misread a correct passage, and the answer is only as good as what is retrieved. For public institutions, this is the main argument for grounding systems in an authoritative document store and showing citations to the reader.</p>
+  </div>
+  <div class="lab" id="lab12">
+    <header><span class="n">Laboratory 12</span><h3>A retriever in eight documents</h3></header>
+    <div class="body">
+      <p class="how">Type a question. The lab scores eight short documents with BM25, the classic keyword-based ranking function, and builds the augmented prompt a generator would receive from the top two. Production systems usually add dense vector retrieval, but the pipeline is the same.</p>
+      <div class="ctl"><label for="rg-q">Question</label><input type="text" id="rg-q" value="Which paper proposed nucleus sampling?" autocomplete="off"></div>
+      <div class="seg" id="rg-pre" role="group" aria-label="Example questions"></div>
+      <div class="two">
+        <div id="rg-docs" style="display:grid;gap:8px"></div>
+        <div><div class="stats" style="margin-bottom:8px"><span>Prompt sent to the generator</span></div><div class="out" id="rg-prompt"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="srcs" data-s="ji2023 lewis2020 schick2023 yao2023"></div>
+</section>
+
+<section class="chapter" id="ch13" data-title="13 · Doing more with less">
+  <h2>Doing more with less</h2>
+  <div class="kicker">Chapter 13 · 2017–2023</div>
+  <div class="prose">
+    <p>Scale is expensive, and much recent work makes it cheaper. A <b>mixture of experts</b> replaces one large feed-forward block with many smaller "experts" and a router that sends each token to only a few of them <cite class="c" data-r="shazeer2017"></cite>. Total parameters can grow while the computation per token stays nearly flat. Switch Transformers simplified routing to a single expert per token and trained models with over a trillion parameters <cite class="c" data-r="fedus2022"></cite>.</p>
+    <p><b>Low-rank adaptation</b> (LoRA) makes fine-tuning cheap <cite class="c" data-r="hu2022"></cite>. Instead of updating a large weight matrix <i>W</i>, it freezes <i>W</i> and learns a correction as the product of two thin matrices, <i>W + BA</i>, where <i>B</i> and <i>A</i> have a small rank <i>r</i>. For GPT-3 the authors reported about 10,000 times fewer trainable parameters than full fine-tuning, with comparable quality. QLoRA combined this with 4-bit quantisation of the frozen model, so a 65-billion-parameter model could be fine-tuned on a single 48 GB GPU <cite class="c" data-r="dettmers2023"></cite>. FlashAttention reorganised the attention computation around GPU memory to make it several times faster without approximation <cite class="c" data-r="dao2022"></cite>.</p>
+    <p>These methods matter for any institution that wants to adapt open models to its own language and documents on modest hardware.</p>
+  </div>
+  <div class="lab" id="lab13">
+    <header><span class="n">Laboratory 13</span><h3>Parameter calculator</h3></header>
+    <div class="body">
+      <p class="how">Estimates use the standard Transformer layout: about 12·L·d² parameters in total, with attention projections 4d² per layer and a feed-forward block of 8d² per layer. The GPT-3 preset (d = 12,288, L = 96) gives about 174 billion parameters.</p>
+      <div class="seg" id="ef-pre" role="group" aria-label="Model presets"><button data-d="768" data-l="12" aria-pressed="false">BERT-base size</button><button data-d="4096" data-l="32" aria-pressed="false">7B class</button><button data-d="12288" data-l="96" aria-pressed="true">GPT-3 175B</button></div>
+      <div class="controls">
+        <div class="ctl"><label for="ef-d">Model width d: <output id="ef-do"></output></label><input type="range" id="ef-d" min="512" max="16384" step="256" value="12288"></div>
+        <div class="ctl"><label for="ef-l">Layers L: <output id="ef-lo"></output></label><input type="range" id="ef-l" min="6" max="128" step="1" value="96"></div>
+      </div>
+      <div class="two">
+        <div>
+          <h3 style="font-size:18px;margin:0 0 8px">LoRA</h3>
+          <div class="controls">
+            <div class="ctl"><label for="ef-r">Rank r: <output id="ef-ro"></output></label><input type="range" id="ef-r" min="1" max="64" step="1" value="4"></div>
+            <div class="ctl"><label for="ef-m">Adapted matrices</label><select id="ef-m"><option value="2">Query and value (paper default)</option><option value="4">All four attention matrices</option></select></div>
+          </div>
+          <div class="stats" id="ef-lora" style="margin-top:10px"></div>
+        </div>
+        <div>
+          <h3 style="font-size:18px;margin:0 0 8px">Mixture of experts</h3>
+          <div class="controls">
+            <div class="ctl"><label for="ef-e">Experts per layer: <output id="ef-eo"></output></label><input type="range" id="ef-e" min="1" max="128" step="1" value="8"></div>
+            <div class="ctl"><label for="ef-k">Experts used per token: <output id="ef-ko"></output></label><input type="range" id="ef-k" min="1" max="4" step="1" value="2"></div>
+          </div>
+          <div class="stats" id="ef-moe" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="srcs" data-s="shazeer2017 fedus2022 hu2022 dettmers2023 dao2022"></div>
+</section>
+
+<div class="part">Epilogue</div>
+
+<section class="chapter" id="epilogue" data-title="Epilogue · What the record does not settle">
+  <h2>What the record does not settle</h2>
+  <div class="kicker">Epilogue</div>
+  <div class="prose">
+    <p>Seventy-five years after Shannon, the core task is unchanged: predict the next token. What changed is the representation (vectors instead of counts), the mechanism (attention instead of recurrence), the scale (trillions of tokens), and the training signal (human and verifiable feedback layered on top of prediction).</p>
+    <p>Several questions remain open in the peer-reviewed literature. Bender and colleagues argued that ever-larger models trained on uncurated web text carry environmental and financial costs, encode the biases of their data, and produce fluent text that readers may mistake for understanding <cite class="c" data-r="bender2021"></cite>. Weidinger and colleagues set out a taxonomy of risks from language models, from discrimination and misinformation to malicious use and environmental harm <cite class="c" data-r="weidinger2022"></cite>. Strubell, Ganesh and McCallum quantified the energy and carbon cost of training NLP models <cite class="c" data-r="strubell2019"></cite>. Hallucination remains an active research problem <cite class="c" data-r="ji2023"></cite>.</p>
+    <p>For a government reader, three practical lessons follow from the chapters above. Evaluate models on your own language and documents, because tokenization and training data make performance uneven across languages (Chapter 5). Ground answers in authoritative sources the reader can check (Chapter 12). Report evaluation results with more than one metric and keep a human accountable for decisions (Chapters 9 and 10).</p>
+  </div>
+  <div class="srcs" data-s="bender2021 weidinger2022 strubell2019 ji2023"></div>
+</section>
+
+<section class="chapter" id="refs" data-title="Bibliography">
+  <h2>Bibliography</h2>
+  <div class="kicker">All sources, in chronological order</div>
+  <ol class="bib" id="bib"></ol>
+</section>
+
+</article>
+</div>
+
+<footer>
+  The Next Token · Arthashastra 2.0 · Md Taufiqul Islam, Joint Secretary to the Government of Bangladesh · taufiq28@gmail.com<br>
+  Simulations are illustrative toy models. Published constants are used where stated (Chapter 7: Hoffmann et al. 2022, Approach 3 fit). Laboratory text in Chapters 1 and 12 is original.
+</footer>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const fmt=(x,d=2)=>Number(x).toFixed(d);
+const big=x=>{const a=Math.abs(x);if(a>=1e12)return fmt(x/1e12,a>=1e13?0:1)+" T";if(a>=1e9)return fmt(x/1e9,a>=1e10?0:1)+" B";if(a>=1e6)return fmt(x/1e6,a>=1e7?0:1)+" M";if(a>=1e3)return fmt(x/1e3,0)+" K";return String(Math.round(x));};
+const sci=x=>{const e=Math.floor(Math.log10(x));const m=x/Math.pow(10,e);return fmt(m,1)+"×10"+String(e).split("").map(c=>"⁰¹²³⁴⁵⁶⁷⁸⁹"[c]||c).join("");};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- bibliography ---------- */
+const BIB=[
+ {id:"shannon1948",sh:"Shannon 1948",a:"Shannon, C. E.",y:1948,t:"A mathematical theory of communication",v:"Bell System Technical Journal, 27(3), 379–423",s:"pr",u:"https://doi.org/10.1002/j.1538-7305.1948.tb01338.x"},
+ {id:"rumelhart1986",sh:"Rumelhart et al. 1986",a:"Rumelhart, D. E., Hinton, G. E., & Williams, R. J.",y:1986,t:"Learning representations by back-propagating errors",v:"Nature, 323, 533–536",s:"pr",u:"https://doi.org/10.1038/323533a0"},
+ {id:"elman1990",sh:"Elman 1990",a:"Elman, J. L.",y:1990,t:"Finding structure in time",v:"Cognitive Science, 14(2), 179–211",s:"pr",u:"https://doi.org/10.1207/s15516709cog1402_1"},
+ {id:"bengio1994",sh:"Bengio et al. 1994",a:"Bengio, Y., Simard, P., & Frasconi, P.",y:1994,t:"Learning long-term dependencies with gradient descent is difficult",v:"IEEE Transactions on Neural Networks, 5(2), 157–166",s:"pr",u:"https://doi.org/10.1109/72.279181"},
+ {id:"hochreiter1997",sh:"Hochreiter & Schmidhuber 1997",a:"Hochreiter, S., & Schmidhuber, J.",y:1997,t:"Long short-term memory",v:"Neural Computation, 9(8), 1735–1780",s:"pr",u:"https://doi.org/10.1162/neco.1997.9.8.1735"},
+ {id:"gers2000",sh:"Gers et al. 2000",a:"Gers, F. A., Schmidhuber, J., & Cummins, F.",y:2000,t:"Learning to forget: Continual prediction with LSTM",v:"Neural Computation, 12(10), 2451–2471",s:"pr",u:"https://doi.org/10.1162/089976600300015015"},
+ {id:"bengio2003",sh:"Bengio et al. 2003",a:"Bengio, Y., Ducharme, R., Vincent, P., & Jauvin, C.",y:2003,t:"A neural probabilistic language model",v:"Journal of Machine Learning Research, 3, 1137–1155",s:"pr",u:"https://www.jmlr.org/papers/v3/bengio03a.html"},
+ {id:"mikolov2013",sh:"Mikolov et al. 2013",a:"Mikolov, T., Sutskever, I., Chen, K., Corrado, G., & Dean, J.",y:2013,t:"Distributed representations of words and phrases and their compositionality",v:"Advances in Neural Information Processing Systems (NeurIPS) 26",s:"pr",u:"https://arxiv.org/abs/1310.4546"},
+ {id:"sutskever2014",sh:"Sutskever et al. 2014",a:"Sutskever, I., Vinyals, O., & Le, Q. V.",y:2014,t:"Sequence to sequence learning with neural networks",v:"NeurIPS 27",s:"pr",u:"https://arxiv.org/abs/1409.3215"},
+ {id:"bahdanau2015",sh:"Bahdanau et al. 2015",a:"Bahdanau, D., Cho, K., & Bengio, Y.",y:2015,t:"Neural machine translation by jointly learning to align and translate",v:"International Conference on Learning Representations (ICLR)",s:"pr",u:"https://arxiv.org/abs/1409.0473"},
+ {id:"sennrich2016",sh:"Sennrich et al. 2016",a:"Sennrich, R., Haddow, B., & Birch, A.",y:2016,t:"Neural machine translation of rare words with subword units",v:"Proceedings of ACL 2016",s:"pr",u:"https://aclanthology.org/P16-1162/"},
+ {id:"bolukbasi2016",sh:"Bolukbasi et al. 2016",a:"Bolukbasi, T., Chang, K.-W., Zou, J., Saligrama, V., & Kalai, A.",y:2016,t:"Man is to computer programmer as woman is to homemaker? Debiasing word embeddings",v:"NeurIPS 29",s:"pr",u:"https://arxiv.org/abs/1607.06520"},
+ {id:"vaswani2017",sh:"Vaswani et al. 2017",a:"Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., & Polosukhin, I.",y:2017,t:"Attention is all you need",v:"NeurIPS 30",s:"pr",u:"https://arxiv.org/abs/1706.03762"},
+ {id:"shazeer2017",sh:"Shazeer et al. 2017",a:"Shazeer, N., Mirhoseini, A., Maziarz, K., Davis, A., Le, Q., Hinton, G., & Dean, J.",y:2017,t:"Outrageously large neural networks: The sparsely-gated mixture-of-experts layer",v:"ICLR 2017",s:"pr",u:"https://arxiv.org/abs/1701.06538"},
+ {id:"christiano2017",sh:"Christiano et al. 2017",a:"Christiano, P. F., Leike, J., Brown, T., Martic, M., Legg, S., & Amodei, D.",y:2017,t:"Deep reinforcement learning from human preferences",v:"NeurIPS 30",s:"pr",u:"https://arxiv.org/abs/1706.03741"},
+ {id:"caliskan2017",sh:"Caliskan et al. 2017",a:"Caliskan, A., Bryson, J. J., & Narayanan, A.",y:2017,t:"Semantics derived automatically from language corpora contain human-like biases",v:"Science, 356(6334), 183–186",s:"pr",u:"https://doi.org/10.1126/science.aal4230"},
+ {id:"radford2018",sh:"Radford et al. 2018",a:"Radford, A., Narasimhan, K., Salimans, T., & Sutskever, I.",y:2018,t:"Improving language understanding by generative pre-training",v:"OpenAI",s:"tr",u:"https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf"},
+ {id:"fan2018",sh:"Fan et al. 2018",a:"Fan, A., Lewis, M., & Dauphin, Y.",y:2018,t:"Hierarchical neural story generation",v:"Proceedings of ACL 2018",s:"pr",u:"https://aclanthology.org/P18-1082/"},
+ {id:"devlin2019",sh:"Devlin et al. 2019",a:"Devlin, J., Chang, M.-W., Lee, K., & Toutanova, K.",y:2019,t:"BERT: Pre-training of deep bidirectional Transformers for language understanding",v:"Proceedings of NAACL-HLT 2019",s:"pr",u:"https://aclanthology.org/N19-1423/"},
+ {id:"strubell2019",sh:"Strubell et al. 2019",a:"Strubell, E., Ganesh, A., & McCallum, A.",y:2019,t:"Energy and policy considerations for deep learning in NLP",v:"Proceedings of ACL 2019",s:"pr",u:"https://aclanthology.org/P19-1355/"},
+ {id:"holtzman2020",sh:"Holtzman et al. 2020",a:"Holtzman, A., Buys, J., Du, L., Forbes, M., & Choi, Y.",y:2020,t:"The curious case of neural text degeneration",v:"ICLR 2020",s:"pr",u:"https://arxiv.org/abs/1904.09751"},
+ {id:"raffel2020",sh:"Raffel et al. 2020",a:"Raffel, C., Shazeer, N., Roberts, A., Lee, K., Narang, S., Matena, M., Zhou, Y., Li, W., & Liu, P. J.",y:2020,t:"Exploring the limits of transfer learning with a unified text-to-text Transformer",v:"Journal of Machine Learning Research, 21(140), 1–67",s:"pr",u:"https://jmlr.org/papers/v21/20-074.html"},
+ {id:"kaplan2020",sh:"Kaplan et al. 2020",a:"Kaplan, J., McCandlish, S., Henighan, T., Brown, T. B., Chess, B., Child, R., Gray, S., Radford, A., Wu, J., & Amodei, D.",y:2020,t:"Scaling laws for neural language models",v:"arXiv:2001.08361",s:"pre",u:"https://arxiv.org/abs/2001.08361"},
+ {id:"brown2020",sh:"Brown et al. 2020",a:"Brown, T. B., Mann, B., Ryder, N., Subbiah, M., et al.",y:2020,t:"Language models are few-shot learners",v:"NeurIPS 33",s:"pr",u:"https://arxiv.org/abs/2005.14165"},
+ {id:"lewis2020",sh:"Lewis et al. 2020",a:"Lewis, P., Perez, E., Piktus, A., Petroni, F., Karpukhin, V., Goyal, N., et al.",y:2020,t:"Retrieval-augmented generation for knowledge-intensive NLP tasks",v:"NeurIPS 33",s:"pr",u:"https://arxiv.org/abs/2005.11401"},
+ {id:"bender2021",sh:"Bender et al. 2021",a:"Bender, E. M., Gebru, T., McMillan-Major, A., & Shmitchell, S.",y:2021,t:"On the dangers of stochastic parrots: Can language models be too big?",v:"Proceedings of ACM FAccT 2021, 610–623",s:"pr",u:"https://doi.org/10.1145/3442188.3445922"},
+ {id:"hu2022",sh:"Hu et al. 2022",a:"Hu, E. J., Shen, Y., Wallis, P., Allen-Zhu, Z., Li, Y., Wang, S., Wang, L., & Chen, W.",y:2022,t:"LoRA: Low-rank adaptation of large language models",v:"ICLR 2022",s:"pr",u:"https://arxiv.org/abs/2106.09685"},
+ {id:"fedus2022",sh:"Fedus et al. 2022",a:"Fedus, W., Zoph, B., & Shazeer, N.",y:2022,t:"Switch Transformers: Scaling to trillion parameter models with simple and efficient sparsity",v:"Journal of Machine Learning Research, 23(120), 1–39",s:"pr",u:"https://jmlr.org/papers/v23/21-0998.html"},
+ {id:"hoffmann2022",sh:"Hoffmann et al. 2022",a:"Hoffmann, J., Borgeaud, S., Mensch, A., Buchatskaya, E., et al.",y:2022,t:"Training compute-optimal large language models",v:"NeurIPS 35",s:"pr",u:"https://arxiv.org/abs/2203.15556"},
+ {id:"ouyang2022",sh:"Ouyang et al. 2022",a:"Ouyang, L., Wu, J., Jiang, X., Almeida, D., Wainwright, C. L., et al.",y:2022,t:"Training language models to follow instructions with human feedback",v:"NeurIPS 35",s:"pr",u:"https://arxiv.org/abs/2203.02155"},
+ {id:"wei2022cot",sh:"Wei et al. 2022a",a:"Wei, J., Wang, X., Schuurmans, D., Bosma, M., Ichter, B., Xia, F., Chi, E., Le, Q., & Zhou, D.",y:2022,t:"Chain-of-thought prompting elicits reasoning in large language models",v:"NeurIPS 35",s:"pr",u:"https://arxiv.org/abs/2201.11903"},
+ {id:"wei2022emergent",sh:"Wei et al. 2022b",a:"Wei, J., Tay, Y., Bommasani, R., Raffel, C., Zoph, B., et al.",y:2022,t:"Emergent abilities of large language models",v:"Transactions on Machine Learning Research (TMLR)",s:"pr",u:"https://arxiv.org/abs/2206.07682"},
+ {id:"dao2022",sh:"Dao et al. 2022",a:"Dao, T., Fu, D. Y., Ermon, S., Rudra, A., & Ré, C.",y:2022,t:"FlashAttention: Fast and memory-efficient exact attention with IO-awareness",v:"NeurIPS 35",s:"pr",u:"https://arxiv.org/abs/2205.14135"},
+ {id:"weidinger2022",sh:"Weidinger et al. 2022",a:"Weidinger, L., Uesato, J., Rauh, M., Griffin, C., et al.",y:2022,t:"Taxonomy of risks posed by language models",v:"Proceedings of ACM FAccT 2022",s:"pr",u:"https://doi.org/10.1145/3531146.3533088"},
+ {id:"wang2023",sh:"Wang et al. 2023",a:"Wang, X., Wei, J., Schuurmans, D., Le, Q., Chi, E., Narang, S., Chowdhery, A., & Zhou, D.",y:2023,t:"Self-consistency improves chain of thought reasoning in language models",v:"ICLR 2023",s:"pr",u:"https://arxiv.org/abs/2203.11171"},
+ {id:"yao2023",sh:"Yao et al. 2023",a:"Yao, S., Zhao, J., Yu, D., Du, N., Shafran, I., Narasimhan, K., & Cao, Y.",y:2023,t:"ReAct: Synergizing reasoning and acting in language models",v:"ICLR 2023",s:"pr",u:"https://arxiv.org/abs/2210.03629"},
+ {id:"ji2023",sh:"Ji et al. 2023",a:"Ji, Z., Lee, N., Frieske, R., Yu, T., Su, D., Xu, Y., Ishii, E., Bang, Y., Madotto, A., & Fung, P.",y:2023,t:"Survey of hallucination in natural language generation",v:"ACM Computing Surveys, 55(12)",s:"pr",u:"https://doi.org/10.1145/3571730"},
+ {id:"schick2023",sh:"Schick et al. 2023",a:"Schick, T., Dwivedi-Yu, J., Dessì, R., Raileanu, R., Lomeli, M., Zettlemoyer, L., Cancedda, N., & Scialom, T.",y:2023,t:"Toolformer: Language models can teach themselves to use tools",v:"NeurIPS 36",s:"pr",u:"https://arxiv.org/abs/2302.04761"},
+ {id:"rafailov2023",sh:"Rafailov et al. 2023",a:"Rafailov, R., Sharma, A., Mitchell, E., Ermon, S., Manning, C. D., & Finn, C.",y:2023,t:"Direct preference optimization: Your language model is secretly a reward model",v:"NeurIPS 36",s:"pr",u:"https://arxiv.org/abs/2305.18290"},
+ {id:"schaeffer2023",sh:"Schaeffer et al. 2023",a:"Schaeffer, R., Miranda, B., & Koyejo, S.",y:2023,t:"Are emergent abilities of large language models a mirage?",v:"NeurIPS 36",s:"pr",u:"https://arxiv.org/abs/2304.15004"},
+ {id:"petrov2023",sh:"Petrov et al. 2023",a:"Petrov, A., La Malfa, E., Torr, P. H. S., & Bibi, A.",y:2023,t:"Language model tokenizers introduce unfairness between languages",v:"NeurIPS 36",s:"pr",u:"https://arxiv.org/abs/2305.15425"},
+ {id:"dettmers2023",sh:"Dettmers et al. 2023",a:"Dettmers, T., Pagnoni, A., Holtzman, A., & Zettlemoyer, L.",y:2023,t:"QLoRA: Efficient finetuning of quantized LLMs",v:"NeurIPS 36",s:"pr",u:"https://arxiv.org/abs/2305.14314"},
+ {id:"deepseek2025",sh:"DeepSeek-AI 2025",a:"DeepSeek-AI (Guo, D., Yang, D., Zhang, H., et al.)",y:2025,t:"DeepSeek-R1 incentivizes reasoning in LLMs through reinforcement learning",v:"Nature, 645",s:"pr",u:"https://arxiv.org/abs/2501.12948"}
+];
+const B=Object.fromEntries(BIB.map(b=>[b.id,b]));
+const badge={pr:'<span class="badge pr">Peer-reviewed</span>',pre:'<span class="badge pre">Preprint</span>',tr:'<span class="badge tr">Tech report</span>'};
+$("#bib").innerHTML=BIB.slice().sort((a,b)=>a.y-b.y).map(b=>`<li id="ref-${b.id}">${esc(b.a)} (${b.y}). <a href="${b.u}" target="_blank" rel="noopener">${esc(b.t)}</a>. <i>${esc(b.v)}</i>.${badge[b.s]}</li>`).join("");
+$$("cite.c").forEach(c=>{const b=B[c.dataset.r];c.innerHTML=b?`(<a class="cite" href="#ref-${b.id}">${esc(b.sh)}</a>)`:"";});
+$$(".srcs").forEach(s=>{const ids=s.dataset.s.split(" ");s.innerHTML="<b>Sources for this chapter</b><br>"+ids.map(i=>{const b=B[i];return `<a href="#ref-${i}">${esc(b.sh)}</a> · ${esc(b.v.split(",")[0])}${b.s!=="pr"?" ("+(b.s==="pre"?"preprint":"tech report")+")":""}`}).join("<br>");});
+
+/* ---------- navigation ---------- */
+const chapters=$$("section.chapter");
+const TL=[["1948","Shannon's n-grams","ch1"],["1997","LSTM","ch3"],["2003","Neural language model","ch2"],["2013","word2vec","ch2"],["2015","Attention","ch4"],["2016","Subword tokens","ch5"],["2017","Transformer","ch4"],["2019","BERT","ch6"],["2020","GPT-3","ch6"],["2020","Nucleus sampling","ch8"],["2022","Chinchilla","ch7"],["2022","InstructGPT","ch10"],["2022","Chain of thought","ch11"],["2023","Emergence a mirage?","ch9"],["2023","DPO","ch10"],["2025","DeepSeek-R1","ch11"]];
+$("#tl").innerHTML=TL.map(t=>`<li><a href="#${t[2]}"><span class="y">${t[0]}</span><span class="e">${t[1]}</span></a></li>`).join("");
+const parts={ch1:"Part I · Foundations",ch4:"Part II · The Transformer",ch7:"Part III · Scale",ch10:"Part IV · Making models useful",epilogue:"Close"};
+let rail="";chapters.forEach(c=>{if(parts[c.id])rail+=`<h4>${parts[c.id]}</h4>`;else if(c.id==="prologue")rail+=`<h4>Open</h4>`;const t=c.dataset.title;const m=t.match(/^(\d+) · (.*)$/);rail+=`<a href="#${c.id}" data-id="${c.id}"><span>${m?m[1]:"·"}</span>${esc(m?m[2]:t)}</a>`;});
+$("#rail").innerHTML=rail;
+$("#jump").innerHTML=chapters.map(c=>`<option value="${c.id}">${esc(c.dataset.title)}</option>`).join("");
+$("#jump").addEventListener("change",e=>{document.getElementById(e.target.value).scrollIntoView();});
+let cur="";
+function onScroll(){
+  const y=window.scrollY+120;let id=chapters[0].id;
+  for(const c of chapters){if(c.offsetTop<=y)id=c.id;}
+  if(id!==cur){cur=id;const c=document.getElementById(id);$("#now").textContent=c.dataset.title;$("#jump").value=id;$$("#rail a").forEach(a=>a.classList.toggle("on",a.dataset.id===id));}
+  const h=document.documentElement.scrollHeight-innerHeight;$("#prog").style.width=(h>0?Math.min(100,window.scrollY/h*100):0)+"%";
+}
+addEventListener("scroll",onScroll,{passive:true});onScroll();
+
+/* ---------- chart helper ---------- */
+function chart(o){
+  const W=o.w||640,H=o.h||300,m={l:58,r:18,t:16,b:46};
+  const sx=x=>m.l+(x-o.xmin)/(o.xmax-o.xmin)*(W-m.l-m.r);
+  const sy=y=>H-m.b-(y-o.ymin)/(o.ymax-o.ymin)*(H-m.t-m.b);
+  const cy=y=>sy(Math.max(o.ymin,Math.min(o.ymax,y)));
+  let s=`<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="${esc(o.aria||"")}">`;
+  (o.yticks||[]).forEach(t=>{s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${sy(t[0])}" y2="${sy(t[0])}" class="grid"/><text x="${m.l-8}" y="${sy(t[0])+4}" text-anchor="end" class="tick">${t[1]}</text>`;});
+  s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${H-m.b}" y2="${H-m.b}" class="axis"/>`;
+  (o.xticks||[]).forEach(t=>{s+=`<line x1="${sx(t[0])}" x2="${sx(t[0])}" y1="${H-m.b}" y2="${H-m.b+5}" class="axis"/><text x="${sx(t[0])}" y="${H-m.b+19}" text-anchor="middle" class="tick">${t[1]}</text>`;});
+  if(o.xlabel)s+=`<text x="${(m.l+W-m.r)/2}" y="${H-6}" text-anchor="middle" class="alabel">${o.xlabel}</text>`;
+  if(o.ylabel)s+=`<text transform="translate(14 ${(m.t+H-m.b)/2}) rotate(-90)" text-anchor="middle" class="alabel">${o.ylabel}</text>`;
+  if(o.vline!=null)s+=`<line x1="${sx(o.vline)}" x2="${sx(o.vline)}" y1="${m.t}" y2="${H-m.b}" class="vl"/>`;
+  o.series.forEach(se=>{const d=se.pts.filter(p=>isFinite(p[1])).map((p,i)=>(i?"L":"M")+sx(p[0]).toFixed(1)+" "+cy(p[1]).toFixed(1)).join("");s+=`<path d="${d}" class="ln ${se.cls||""}"/>`;});
+  (o.markers||[]).forEach(k=>{const x=sx(k.x),y=cy(k.y);s+=`<circle cx="${x}" cy="${y}" r="${k.r||6}" class="mk ${k.cls||""}"/>`;if(k.label){const right=x<W-160;s+=`<text x="${right?x+10:x-10}" y="${y-(k.dy||10)}" text-anchor="${right?"start":"end"}" class="mlabel">${esc(k.label)}</text>`;}});
+  return s+"</svg>";
+}
+function bars(rows){return rows.map(r=>`<div class="brow ${r.off?"off":""}"><span class="lb" title="${esc(r.l)}">${esc(r.l)}</span><span class="tr"><span class="fl" style="width:${Math.max(0,Math.min(1,r.v))*100}%"></span>${r.g!=null?`<span class="fl g" style="width:${Math.max(0,Math.min(1,r.g))*100}%"></span>`:""}</span><span class="v">${r.t}</span></div>`).join("");}
+function segInit(sel,fn){const g=$(sel);g.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;[...g.children].forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));fn(b);});}
+function bindRange(id,outFmt,fn){const el=$("#"+id),o=$("#"+id+"o");const f=()=>{if(o)o.textContent=outFmt(+el.value);fn();};el.addEventListener("input",f);return f;}
+
+/* ---------- Lab 1: n-gram ---------- */
+const CORPUS="the river remembers every boat that has crossed it. in the monsoon the water rises and the fields turn to mirrors, and the farmers wait for the flood to leave silt on the land. a language is a river too. every word that is spoken leaves a little silt in the minds of those who hear it, and the next speaker plants new words in that soil. a machine that learns language must learn the shape of this river: which words follow which, which letters follow which, how a sentence bends and where it ends. the first models only counted. they looked at the last few letters and asked what usually came next. with one letter of memory the output is noise. with three letters it begins to look like words. with five letters it begins to look like sentences, though the sentences mean nothing. the counting machine has no idea what a boat is, or a river, or a farmer. it knows only that after the letters of the word river the letter s often follows, and that after the word the a noun usually waits. yet from this simple habit of prediction, scaled up beyond anything its inventors imagined, came the language models of today, which still do one thing above all: they guess the next token. ";
+const ngCache={};
+function ngModel(k){if(ngCache[k])return ngCache[k];const m=new Map();for(let i=k;i<CORPUS.length;i++){const ctx=CORPUS.slice(i-k,i),ch=CORPUS[i];let t=m.get(ctx);if(!t){t=new Map();m.set(ctx,t);}t.set(ch,(t.get(ch)||0)+1);}return ngCache[k]=m;}
+function sampleMap(t){let tot=0;for(const v of t.values())tot+=v;let r=Math.random()*tot;for(const [c,v] of t){r-=v;if(r<=0)return c;}return " ";}
+function ngGen(){
+  const k=+$("#ng-k").value;let start=Math.floor(Math.random()*(CORPUS.length-k-1));
+  while(start>0&&CORPUS[start-1]!==" ")start--;
+  let out=CORPUS.slice(start,start+k);let backs=0;
+  while(out.length<300){let kk=k,t;while(true){t=ngModel(kk).get(out.slice(out.length-kk));if(t||kk===0)break;kk--;backs++;}out+=sampleMap(t);}
+  $("#ng-out").textContent=out;
+  const contexts=ngModel(k).size;
+  $("#ng-stats").innerHTML=`<span><b>${contexts}</b>distinct contexts seen</span><span><b>${(CORPUS.length/Math.max(1,contexts)).toFixed(1)}</b>examples per context</span><span><b>${backs}</b>back-offs to shorter context</span>`;
+}
+bindRange("ng-k",v=>v,ngGen);$("#ng-go").addEventListener("click",ngGen);ngGen();
+
+/* ---------- Lab 2: analogies ---------- */
+const VEC={man:[1,1],woman:[1.3,3.1],king:[4,1.4],queen:[4.3,3.5],boy:[0,0.6],girl:[0.3,2.7],prince:[3.1,0.9],princess:[3.4,3],Bangladesh:[6,5.2],Dhaka:[8.6,5.9],Japan:[6.3,7.2],Tokyo:[8.9,7.9],France:[6.6,9.1],Paris:[9.2,9.8]};
+const WORDS=Object.keys(VEC);
+["an-a","an-b","an-c"].forEach(id=>{$("#"+id).innerHTML=WORDS.map(w=>`<option>${w}</option>`).join("");});
+const PRE=[["king","man","woman"],["Dhaka","Bangladesh","Japan"],["Paris","France","Bangladesh"],["princess","girl","boy"]];
+$("#an-pre").innerHTML=PRE.map((p,i)=>`<button aria-pressed="${i===0}" data-i="${i}">${p[0]} − ${p[1]} + ${p[2]}</button>`).join("");
+function setAn(p){$("#an-a").value=p[0];$("#an-b").value=p[1];$("#an-c").value=p[2];anDraw();}
+segInit("#an-pre",b=>setAn(PRE[+b.dataset.i]));
+["an-a","an-b","an-c"].forEach(id=>$("#"+id).addEventListener("change",()=>{[...$("#an-pre").children].forEach(x=>x.setAttribute("aria-pressed","false"));anDraw();}));
+function anDraw(){
+  const a=$("#an-a").value,b=$("#an-b").value,c=$("#an-c").value;
+  const r=[VEC[a][0]-VEC[b][0]+VEC[c][0],VEC[a][1]-VEC[b][1]+VEC[c][1]];
+  let best=null,bd=1e9;for(const w of WORDS){if([a,b,c].includes(w))continue;const d=Math.hypot(VEC[w][0]-r[0],VEC[w][1]-r[1]);if(d<bd){bd=d;best=w;}}
+  const W=640,H=380,px=x=>40+(x+1)/(11.5)*(W-80),py=y=>H-30-(y+0.5)/(11)*(H-60);
+  let s=`<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="Word vectors in two dimensions"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--gold)"/></marker><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--teal)"/></marker></defs>`;
+  s+=`<line x1="${px(VEC[b][0])}" y1="${py(VEC[b][1])}" x2="${px(VEC[a][0])}" y2="${py(VEC[a][1])}" style="stroke:var(--gold);stroke-width:2.2" marker-end="url(#ah)"/>`;
+  s+=`<line x1="${px(VEC[c][0])}" y1="${py(VEC[c][1])}" x2="${px(r[0])}" y2="${py(r[1])}" style="stroke:var(--gold);stroke-width:2.2;stroke-dasharray:6 4" marker-end="url(#ah)"/>`;
+  s+=`<line x1="${px(r[0])}" y1="${py(r[1])}" x2="${px(VEC[best][0])}" y2="${py(VEC[best][1])}" style="stroke:var(--teal);stroke-width:1.5;stroke-dasharray:2 3"/>`;
+  for(const w of WORDS){const on=[a,b,c].includes(w),hit=w===best;s+=`<circle cx="${px(VEC[w][0])}" cy="${py(VEC[w][1])}" r="${hit?8:5}" class="mk ${hit?"teal":on?"":"hollow"}"/><text x="${px(VEC[w][0])+10}" y="${py(VEC[w][1])+4}" class="mlabel" style="${hit?"font-weight:600;fill:var(--teal)":on?"":"fill:var(--muted)"}">${w}</text>`;}
+  s+=`<rect x="${px(r[0])-6}" y="${py(r[1])-6}" width="12" height="12" style="fill:none;stroke:var(--ink);stroke-width:1.5"/>`;
+  $("#an-svg").innerHTML=s+"</svg>";
+  $("#an-res").innerHTML=`<span><b>${esc(a)} − ${esc(b)} + ${esc(c)} ≈ ${esc(best)}</b>nearest word to the computed point (square)</span><span><b>${bd.toFixed(2)}</b>distance from the computed point</span>`;
+}
+setAn(PRE[0]);
+
+/* ---------- Lab 3: vanishing gradient ---------- */
+const vgUpd=()=>{
+  const r=+$("#vg-r").value,f=+$("#vg-f").value,T=60;
+  const rnn=[],ls=[];for(let t=0;t<=T;t++){rnn.push([t,t*Math.log10(r)]);ls.push([t,t*Math.log10(f)]);}
+  const yt=[[-12,"10⁻¹²"],[-9,"10⁻⁹"],[-6,"10⁻⁶"],[-3,"10⁻³"],[0,"1"],[3,"10³"],[6,"10⁶"]];
+  $("#vg-svg").innerHTML=chart({xmin:0,xmax:T,ymin:-12,ymax:6,yticks:yt,xticks:[0,10,20,30,40,50,60].map(v=>[v,v]),xlabel:"Steps back in time",ylabel:"Gradient size",series:[{pts:rnn},{pts:ls,cls:"gold"}],aria:"Gradient magnitude versus time steps"});
+  const p=x=>{const e=50*Math.log10(x);return e>=0?"×10^"+e.toFixed(1):"×10^"+e.toFixed(1);};
+  $("#vg-stats").innerHTML=`<span><b>${p(r)}</b>RNN signal after 50 steps</span><span><b>${p(f)}</b>LSTM signal after 50 steps</span><span><b>${r<0.97?"Vanishing":r>1.03?"Exploding":"Near stable"}</b>RNN regime</span>`;
+};
+bindRange("vg-r",v=>v.toFixed(2),vgUpd);bindRange("vg-f",v=>v.toFixed(3),vgUpd);vgUpd();
+
+/* ---------- Lab 4: attention ---------- */
+// dims: [animate, place, function, verb, noun]
+const E={The:[0,0,1,0,0],animal:[1,0,0,0,1],"didn't":[0,0,.5,.8,0],cross:[0,.3,0,1,0],the:[0,0,1,0,0],street:[0,1,0,0,1],because:[0,0,1,.2,0],it:[.3,.3,.6,0,.5],was:[0,0,.6,.6,0],tired:[1,0,0,.3,0],wide:[0,1,0,.1,0]};
+let atEnd="tired",atSel=7;
+function atTokens(){return["The","animal","didn't","cross","the","street","because","it","was",atEnd];}
+function atWeights(){
+  const T=+$("#at-t").value,toks=atTokens(),d=5;
+  const K=toks.map(w=>E[w].map(x=>x*2));
+  const Q=toks.map(w=>{if(w==="it"){const a=E[atEnd];return [a[0]*2.4,a[1]*2.4,0,0,2.4];}return E[w].map(x=>x*1.6);});
+  return Q.map(q=>{const sc=K.map(k=>q.reduce((s,v,i)=>s+v*k[i],0)/Math.sqrt(d)/T);const mx=Math.max(...sc);const ex=sc.map(x=>Math.exp(x-mx));const z=ex.reduce((a,b)=>a+b,0);return ex.map(x=>x/z);});
+}
+function atDraw(){
+  const toks=atTokens(),Wt=atWeights(),row=Wt[atSel];
+  $("#at-toks").innerHTML=toks.map((w,i)=>`<button class="tk ${i===atSel?"sel":""}" data-i="${i}" style="background:color-mix(in srgb,var(--gold) ${Math.round(row[i]*85)}%,var(--bg))">${esc(w)}</button>`).join("");
+  $("#at-bars").innerHTML=`<div class="stats"><span>Where <b style="display:inline;font-size:18px">${esc(toks[atSel])}</b> attends</span></div>`+bars(toks.map((w,i)=>({l:w,v:row[i],t:(row[i]*100).toFixed(0)+"%"})));
+  let h=`<tr><th></th>${toks.map(w=>`<th class="c">${esc(w)}</th>`).join("")}</tr>`;
+  Wt.forEach((r,i)=>{h+=`<tr class="${i===atSel?"sel":""}"><th class="r">${esc(toks[i])}</th>${r.map(v=>`<td title="${(v*100).toFixed(0)}%" style="background:color-mix(in srgb,var(--teal) ${Math.round(v*100)}%,var(--bg))"></td>`).join("")}</tr>`;});
+  $("#at-hm").innerHTML=h;
+}
+$("#at-toks").addEventListener("click",e=>{const b=e.target.closest(".tk");if(b){atSel=+b.dataset.i;atDraw();}});
+segInit("#at-end",b=>{atEnd=b.dataset.v;atDraw();});
+bindRange("at-t",v=>v.toFixed(1),atDraw);atDraw();
+
+/* ---------- Lab 5: BPE ---------- */
+const BPE0=[["low",5],["lower",2],["newest",6],["widest",3]];
+let bpeW,bpeM;
+function bpeReset(){bpeW=BPE0.map(([w,c])=>({s:[...w,"·"],c}));bpeM=[];bpeDraw(null);}
+function bpeStep(){
+  const cnt=new Map();for(const w of bpeW)for(let i=0;i<w.s.length-1;i++){const k=w.s[i]+"\u0000"+w.s[i+1];cnt.set(k,(cnt.get(k)||0)+w.c);}
+  if(!cnt.size)return;let best=null,bc=-1;for(const [k,v] of cnt)if(v>bc){bc=v;best=k;}
+  const [x,y]=best.split("\u0000");bpeM.push([x,y,bc]);const nt=x+y;
+  for(const w of bpeW){const o=[];for(let i=0;i<w.s.length;i++){if(i<w.s.length-1&&w.s[i]===x&&w.s[i+1]===y){o.push(nt);i++;}else o.push(w.s[i]);}w.s=o;}
+  bpeDraw(nt);
+}
+function bpeEnc(word){let s=[...word.toLowerCase().replace(/[^a-z]/g,""),"·"];for(const [x,y] of bpeM){const o=[];for(let i=0;i<s.length;i++){if(i<s.length-1&&s[i]===x&&s[i+1]===y){o.push(x+y);i++;}else o.push(s[i]);}s=o;}return s;}
+function bpeDraw(nt){
+  $("#bpe-words").innerHTML=bpeW.map(w=>`<div style="margin:4px 0">${w.s.map(t=>`<span class="chip ${t===nt?"new":""}">${esc(t)}</span>`).join("")} <span class="stats" style="display:inline">×${w.c}</span></div>`).join("");
+  $("#bpe-merges").textContent=bpeM.length?bpeM.map((m,i)=>`${i+1}. ${m[0]} + ${m[1]} → ${m[0]+m[1]}   (seen ${m[2]}×)`).join("\n"):"No merges yet. Every symbol is a single character.";
+  const vocab=new Set();bpeW.forEach(w=>w.s.forEach(t=>vocab.add(t)));
+  const total=bpeW.reduce((a,w)=>a+w.s.length*w.c,0);
+  const enc=bpeEnc($("#bpe-in").value||"");
+  $("#bpe-enc").innerHTML=`<span><b>${total}</b>tokens to encode the training words</span><span><b>${vocab.size}</b>symbols in use</span><span><b>${enc.map(t=>`<span class="chip">${esc(t)}</span>`).join("")}</b>${enc.length} tokens for “${esc($("#bpe-in").value)}”</span>`;
+}
+$("#bpe-step").addEventListener("click",bpeStep);$("#bpe-reset").addEventListener("click",bpeReset);$("#bpe-in").addEventListener("input",()=>bpeDraw(null));bpeReset();
+
+/* ---------- Lab 6: masks ---------- */
+let mkMode="dec",mkSel=-1;
+function mkDraw(){
+  let rows,cols,allow,note;
+  if(mkMode==="enc"){rows=cols=["the","cat","[MASK]","on","the","mat"];allow=()=>true;note="Every token sees every other token in both directions. To fill [MASK] the model uses “the cat” on the left and “on the mat” on the right. This suits understanding tasks, but the model cannot generate text left to right on its own.";}
+  else if(mkMode==="dec"){rows=cols=["the","cat","sat","on","the","mat"];allow=(i,j)=>j<=i;note="Each token sees only itself and earlier tokens: a lower-triangular mask. Every position is a training example of next-token prediction, and generation is natural: append the sampled token and continue.";}
+  else{cols=["the","cat","sat","<s>","on","the"];rows=["the","cat","sat","on","the","mat"];allow=(i,j)=>i<3?j<3:(j<3||(j-3)<=(i-3));note="Rows 1–3 are the encoder reading the input “the cat sat” with full attention. Rows 4–6 are the decoder writing “on the mat”: it sees the whole input through cross-attention, and only earlier output tokens, starting from the start symbol <s>.";}
+  let h=`<tr><th></th>${cols.map(w=>`<th class="c">${esc(w)}</th>`).join("")}</tr>`;
+  rows.forEach((w,i)=>{h+=`<tr class="${i===mkSel?"sel":""}"><th class="r"><button class="tk" data-i="${i}" style="padding:1px 6px;font-size:12px">${esc(w)}</button></th>${cols.map((_,j)=>{const a=allow(i,j);const hl=i===mkSel&&a;return `<td style="background:${a?(hl?"var(--gold)":"var(--teal)"):"var(--bg)"};opacity:${mkSel>=0&&i!==mkSel&&a?0.45:1}"></td>`;}).join("")}</tr>`;});
+  $("#mk-hm").innerHTML=h;$("#mk-note").textContent=note;
+}
+$("#mk-hm").addEventListener("click",e=>{const b=e.target.closest("button");if(b){const i=+b.dataset.i;mkSel=mkSel===i?-1:i;mkDraw();}});
+segInit("#mk-mode",b=>{mkMode=b.dataset.v;mkSel=-1;mkDraw();});mkDraw();
+
+/* ---------- Lab 7: Chinchilla ---------- */
+const CH={E:1.69,A:406.4,B:410.7,a:0.34,b:0.28};
+const Lnd=(N,D)=>CH.E+CH.A/Math.pow(N,CH.a)+CH.B/Math.pow(D,CH.b);
+const REAL=[["GPT-3",1.75e11,3.0e11],["Gopher",2.8e11,3.0e11],["Chinchilla",7.0e10,1.4e12]];
+function scUpd(){
+  const lc=+$("#sc-c").value,C=Math.pow(10,lc);$("#sc-co").textContent=sci(C)+" FLOPs";
+  const pts=[];let best=[0,9];for(let ln=6;ln<=13;ln+=0.02){const N=Math.pow(10,ln),D=C/(6*N);if(D<1e6)continue;const L=Lnd(N,D);pts.push([ln,L]);if(L<best[1])best=[ln,L];}
+  const ymin=1.6,ymax=Math.min(6,Math.max(...pts.map(p=>p[1]))+0.05);
+  const Nopt=Math.pow(10,best[0]),Dopt=C/(6*Nopt);
+  const mk=[{x:best[0],y:best[1],label:"Optimum: "+big(Nopt)+" params",cls:"teal"}];
+  REAL.forEach(([n,N,D])=>{const c=6*N*D;if(Math.abs(Math.log10(c)-lc)<0.15)mk.push({x:Math.log10(N),y:Lnd(N,C/(6*N)),label:n,r:5});});
+  const yt=[];for(let y=1.75;y<=ymax;y+=(ymax-1.6>1.5?0.5:0.25))yt.push([y,y.toFixed(2)]);
+  $("#sc-svg").innerHTML=chart({xmin:6,xmax:13,ymin:ymin,ymax:ymax,xticks:[[6,"1M"],[7,"10M"],[8,"100M"],[9,"1B"],[10,"10B"],[11,"100B"],[12,"1T"],[13,"10T"]],yticks:yt,xlabel:"Model size N (parameters)",ylabel:"Predicted loss (nats/token)",series:[{pts}],markers:mk,vline:best[0],aria:"Loss versus model size at fixed compute"});
+  $("#sc-stats").innerHTML=`<span><b>${big(Nopt)}</b>compute-optimal parameters</span><span><b>${big(Dopt)}</b>training tokens</span><span><b>${(Dopt/Nopt).toFixed(0)}</b>tokens per parameter</span><span><b>${best[1].toFixed(3)}</b>predicted loss</span>`;
+  $("#sc-tab").innerHTML=`<tr><th class="r">Model</th><th>Params</th><th>Tokens</th><th>Compute</th><th>Tokens/param</th><th>Formula loss</th></tr>`+REAL.map(([n,N,D])=>`<tr><th class="r">${n}</th><td>${big(N)}</td><td>${big(D)}</td><td>${sci(6*N*D)}</td><td>${(D/N).toFixed(1)}</td><td>${Lnd(N,D).toFixed(3)}</td></tr>`).join("");
+  $$("#sc-tab td").forEach(td=>{td.style.width="auto";td.style.padding="4px 10px";td.style.fontVariantNumeric="tabular-nums";});$$("#sc-tab th").forEach(th=>{th.style.padding="4px 10px";th.style.width="auto";});
+}
+$("#sc-c").addEventListener("input",scUpd);scUpd();
+
+/* ---------- Lab 8: decoding ---------- */
+const DC=[["sea",3.1],["delta",2.6],["village",2.2],["bank",2.0],["market",1.4],["city",1.2],["shore",1.1],["island",0.6],["moon",-0.6],["spreadsheet",-2.2]];
+function dcDist(){
+  const T=+$("#dc-t").value,K=+$("#dc-k").value,P=+$("#dc-p").value;
+  const lg=DC.map(d=>d[1]/T);const mx=Math.max(...lg);const ex=lg.map(x=>Math.exp(x-mx));const z=ex.reduce((a,b)=>a+b,0);const pr=ex.map(x=>x/z);
+  const keep=new Array(DC.length).fill(false);let cum=0;
+  for(let i=0;i<DC.length;i++){if(i>=K)break;keep[i]=true;cum+=pr[i];if(cum>=P-1e-9)break;}
+  const kz=pr.reduce((a,p,i)=>a+(keep[i]?p:0),0);const fin=pr.map((p,i)=>keep[i]?p/kz:0);
+  return {pr,keep,fin};
+}
+function dcDraw(){const {pr,keep,fin}=dcDist();
+  $("#dc-bars").innerHTML=bars(DC.map((d,i)=>({l:d[0],v:fin[i],g:pr[i],t:(fin[i]*100).toFixed(1)+"%",off:!keep[i]})))+`<div class="legend"><span><i></i>After top-k / top-p (renormalised)</span><span><i class="g"></i>After temperature only</span></div>`;
+  const H=-fin.reduce((a,p)=>a+(p>0?p*Math.log2(p):0),0);
+  $("#dc-ent").innerHTML=`<span><b>${H.toFixed(2)} bits</b>entropy of the final distribution · ${keep.filter(Boolean).length} tokens allowed</span>`;
+}
+function dcSample(){const {fin}=dcDist();const c={};for(let n=0;n<40;n++){let r=Math.random(),i=0;for(;i<fin.length;i++){r-=fin[i];if(r<=0)break;}const w=DC[Math.min(i,DC.length-1)][0];c[w]=(c[w]||0)+1;}
+  $("#dc-out").innerHTML=Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([w,n])=>`<span class="chip">${esc(w)} ×${n}</span>`).join(" ");}
+bindRange("dc-t",v=>v.toFixed(2),dcDraw);bindRange("dc-k",v=>v,dcDraw);bindRange("dc-p",v=>v.toFixed(2),dcDraw);
+$("#dc-go").addEventListener("click",dcSample);dcDraw();dcSample();
+
+/* ---------- Lab 9: emergence ---------- */
+function emUpd(){
+  const L=+$("#em-l").value;const pt=[],em=[];
+  for(let x=7;x<=12.001;x+=0.05){const p=0.25+0.74/(1+Math.exp(-1.1*(x-9.3)));pt.push([x,p]);em.push([x,Math.pow(p,L)]);}
+  $("#em-svg").innerHTML=chart({xmin:7,xmax:12,ymin:0,ymax:1,xticks:[[7,"10M"],[8,"100M"],[9,"1B"],[10,"10B"],[11,"100B"],[12,"1T"]],yticks:[[0,"0%"],[.25,"25%"],[.5,"50%"],[.75,"75%"],[1,"100%"]],xlabel:"Model size (parameters, log scale)",ylabel:"Score",series:[{pts:pt},{pts:em,cls:"gold"}],aria:"Per-token accuracy and exact match versus model size"});
+}
+bindRange("em-l",v=>v,emUpd);emUpd();
+
+/* ---------- Lab 10: alignment ---------- */
+const AL=[["Sunlight scatters off air; blue light scatters most, so blue comes from every direction.",0.16,2.0],["Rayleigh scattering intensity ∝ 1/λ⁴ for particles much smaller than λ.",0.24,0.7],["Because the sky reflects the blue of the ocean.",0.22,-1.6],["Air bends light like a prism and only blue gets through.",0.12,-0.4],["Blue is just the sky's favourite colour!",0.14,-0.8],["I'm not sure.",0.12,-1.1]];
+function alUpd(){
+  const beta=Math.pow(10,+$("#al-b").value);$("#al-bo").textContent=beta.toFixed(2);
+  const w=AL.map(a=>a[1]*Math.exp(a[2]/beta));const z=w.reduce((s,x)=>s+x,0);const pi=w.map(x=>x/z);
+  const kl=pi.reduce((s,p,i)=>s+(p>1e-12?p*Math.log(p/AL[i][1]):0),0);
+  const er=pi.reduce((s,p,i)=>s+p*AL[i][2],0),er0=AL.reduce((s,a)=>s+a[1]*a[2],0);
+  $("#al-bars").innerHTML=bars(AL.map((a,i)=>({l:`r=${a[2]>0?"+":""}${a[2].toFixed(1)} · ${a[0]}`,v:pi[i],g:a[1],t:(pi[i]*100).toFixed(0)+"%"})));
+  $("#al-stats").innerHTML=`<span><b>${er.toFixed(2)}</b>expected reward (reference: ${er0.toFixed(2)})</span><span><b>${kl.toFixed(2)} nats</b>KL divergence from reference</span><span><b>${(1/(1+Math.exp(-(AL[0][2]-AL[1][2])))*100).toFixed(0)}%</b>Bradley–Terry: answer 1 preferred over answer 2</span>`;
+}
+$("#al-b").addEventListener("input",alUpd);alUpd();
+
+/* ---------- Lab 11: self-consistency ---------- */
+function scVote(p,m,n){
+  const trials=4000;let ok=0;const cnt=new Int32Array(m+1);
+  for(let t=0;t<trials;t++){cnt.fill(0);for(let i=0;i<n;i++){if(Math.random()<p)cnt[0]++;else cnt[1+Math.floor(Math.random()*m)]++;}
+    let mx=-1,ties=[];for(let j=0;j<=m;j++){if(cnt[j]>mx){mx=cnt[j];ties=[j];}else if(cnt[j]===mx)ties.push(j);}
+    if(ties[Math.floor(Math.random()*ties.length)]===0)ok++;}
+  return ok/trials;
+}
+let scT=0;
+function sc2Upd(){clearTimeout(scT);scT=setTimeout(()=>{
+  const p=+$("#sc2-p").value,m=+$("#sc2-m").value;const pts=[];
+  for(let n=1;n<=41;n+=2)pts.push([n,scVote(p,m,n)]);
+  $("#sc2-svg").innerHTML=chart({xmin:1,xmax:41,ymin:0,ymax:1,xticks:[1,5,9,13,17,21,25,29,33,37,41].map(v=>[v,v]),yticks:[[0,"0%"],[.25,"25%"],[.5,"50%"],[.75,"75%"],[1,"100%"]],xlabel:"Number of sampled reasoning chains",ylabel:"Accuracy of the vote",series:[{pts:[[1,p],[41,p]],cls:"dash muted"},{pts}],markers:[{x:41,y:pts[pts.length-1][1],label:(pts[pts.length-1][1]*100).toFixed(0)+"% with 41 chains",cls:"teal"}],aria:"Majority vote accuracy versus number of chains"});
+  $("#sc2-stats").innerHTML=`<span><b>${(p*100).toFixed(0)}%</b>one chain (dashed line)</span><span><b>${(pts[4][1]*100).toFixed(0)}%</b>vote of 9 chains</span><span><b>${(pts[pts.length-1][1]*100).toFixed(0)}%</b>vote of 41 chains</span>`;
+},30);}
+bindRange("sc2-p",v=>v.toFixed(2),sc2Upd);bindRange("sc2-m",v=>v,sc2Upd);sc2Upd();
+
+/* ---------- Lab 12: retrieval ---------- */
+const DOCS=[
+ ["Holtzman et al., ICLR 2020","Beam search and greedy decoding produce bland, repetitive text. The authors proposed nucleus (top-p) sampling, which samples from the smallest set of tokens whose total probability exceeds p."],
+ ["Vaswani et al., NeurIPS 2017","The Transformer replaces recurrence with scaled dot-product self-attention and multi-head attention, and trains far faster on parallel hardware."],
+ ["Hoffmann et al., NeurIPS 2022","After training over 400 models, the authors concluded that parameters and training tokens should be scaled in equal proportion. The 70 billion parameter Chinchilla outperformed the 280 billion parameter Gopher."],
+ ["Ouyang et al., NeurIPS 2022","GPT-3 was fine-tuned with human feedback in three stages. Labelers preferred outputs of the 1.3 billion parameter InstructGPT over the 175 billion parameter GPT-3."],
+ ["Sennrich et al., ACL 2016","Byte pair encoding splits rare words into subword units, so neural machine translation can handle an open vocabulary."],
+ ["Lewis et al., NeurIPS 2020","Retrieval-augmented generation combines a generator with a dense retriever over Wikipedia, so answers are conditioned on retrieved passages."],
+ ["Hochreiter & Schmidhuber, 1997","The LSTM uses a gated memory cell so that error can flow across long time lags without vanishing."],
+ ["Brown et al., NeurIPS 2020","The 175 billion parameter GPT-3 performs new tasks from a few examples placed in the prompt, without gradient updates. This is called in-context learning."]
+];
+const STOP=new Set("a an the of to in on and or is are was were which what who whom how why does do did for by with from that this it its as at be into than so can paper proposed".split(" "));
+const tokz=s=>s.toLowerCase().replace(/[^a-z0-9\s-]/g," ").split(/\s+/).filter(w=>w&&!STOP.has(w));
+const DT=DOCS.map(d=>tokz(d[0]+" "+d[1]));const avg=DT.reduce((a,d)=>a+d.length,0)/DT.length;
+function bm25(q){const qt=[...new Set(tokz(q))];return DT.map((d,i)=>{let s=0;for(const t of qt){const f=d.filter(x=>x===t).length;if(!f)continue;const n=DT.filter(x=>x.includes(t)).length;const idf=Math.log(1+(DT.length-n+0.5)/(n+0.5));s+=idf*f*2.2/(f+1.2*(0.25+0.75*d.length/avg));}return {i,s,qt};}).sort((a,b)=>b.s-a.s);}
+const QS=["Which paper proposed nucleus sampling?","How should parameters and tokens scale?","What is in-context learning?","Why do LSTMs avoid vanishing gradients?"];
+$("#rg-pre").innerHTML=QS.map((q,i)=>`<button aria-pressed="${i===0}" data-i="${i}">${esc(q)}</button>`).join("");
+segInit("#rg-pre",b=>{$("#rg-q").value=QS[+b.dataset.i];rgUpd();});
+function hl(text,qt){return esc(text).replace(/[A-Za-z0-9-]+/g,w=>qt.includes(w.toLowerCase())?`<mark>${w}</mark>`:w);}
+function rgUpd(){
+  const q=$("#rg-q").value,r=bm25(q),mx=Math.max(r[0].s,0.001);
+  $("#rg-docs").innerHTML=r.map((x,k)=>`<div class="doc ${k<2&&x.s>0?"top":""}"><div class="meta"><span>${esc(DOCS[x.i][0])}</span><span>BM25 ${x.s.toFixed(2)}</span></div><div class="brow" style="grid-template-columns:1fr;margin-bottom:6px"><span class="tr" style="height:6px"><span class="fl" style="width:${x.s/mx*100}%"></span></span></div>${hl(DOCS[x.i][1],x.qt)}</div>`).join("");
+  const top=r.filter(x=>x.s>0).slice(0,2);
+  $("#rg-prompt").textContent=top.length?`Answer using only the context below. Cite the source.\n\n${top.map((x,k)=>`[${k+1}] ${DOCS[x.i][0]}: ${DOCS[x.i][1]}`).join("\n\n")}\n\nQuestion: ${q}`:`No document matched. A well-built system should say it does not know, rather than answer from memory.\n\nQuestion: ${q}`;
+}
+$("#rg-q").addEventListener("input",()=>{[...$("#rg-pre").children].forEach(x=>x.setAttribute("aria-pressed","false"));rgUpd();});rgUpd();
+
+/* ---------- Lab 13: efficiency ---------- */
+function efUpd(){
+  const d=+$("#ef-d").value,L=+$("#ef-l").value,r=+$("#ef-r").value,nm=+$("#ef-m").value,E=+$("#ef-e").value;let k=+$("#ef-k").value;
+  if(k>E){k=E;$("#ef-k").value=E;}
+  $("#ef-do").textContent=d.toLocaleString();$("#ef-lo").textContent=L;$("#ef-ro").textContent=r;$("#ef-eo").textContent=E;$("#ef-ko").textContent=k;
+  const total=12*L*d*d,lora=nm*2*d*r*L;
+  $("#ef-lora").innerHTML=`<span><b>${big(total)}</b>parameters updated by full fine-tuning</span><span><b>${big(lora)}</b>trainable LoRA parameters</span><span><b>${Math.round(total/lora).toLocaleString()}×</b>fewer trainable parameters</span>`;
+  const attn=4*d*d*L,ffn=8*d*d*L,tot=attn+E*ffn,act=attn+k*ffn;
+  $("#ef-moe").innerHTML=`<span><b>${big(tot)}</b>total parameters stored</span><span><b>${big(act)}</b>parameters used per token</span><span><b>${(act/tot*100).toFixed(0)}%</b>of the model active per token</span>`;
+}
+["ef-d","ef-l","ef-r","ef-m","ef-e","ef-k"].forEach(id=>$("#"+id).addEventListener("input",()=>{if(id==="ef-d"||id==="ef-l")[...$("#ef-pre").children].forEach(x=>x.setAttribute("aria-pressed","false"));efUpd();}));
+segInit("#ef-pre",b=>{$("#ef-d").value=b.dataset.d;$("#ef-l").value=b.dataset.l;efUpd();});efUpd();
+})();
+</script>
+
+</body>
+</html>
